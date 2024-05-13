@@ -5,6 +5,7 @@ var mealSchema = new Schema({
 	'name' : String,
 	'calories' : String,
 	'price' : Number,
+	'image': String,
 	'ingredients' : Array
 });
 
