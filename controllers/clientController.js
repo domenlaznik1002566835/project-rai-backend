@@ -29,22 +29,22 @@ module.exports = {
     show: function (req, res) {
         var id = req.params.id;
 
-        ClientModel.findOne({_id: id}, function (err, client) {
-            if (err) {
+        ClientModel.findOne({_id: id})
+            .then(client => {
+                if (!client) {
+                    return res.status(404).json({
+                        message: 'No such client'
+                    });
+                }
+
+                return res.json(client);
+            })
+            .catch(err => {
                 return res.status(500).json({
                     message: 'Error when getting client.',
                     error: err
                 });
-            }
-
-            if (!client) {
-                return res.status(404).json({
-                    message: 'No such client'
-                });
-            }
-
-            return res.json(client);
-        });
+            });
     },
 
     /**
