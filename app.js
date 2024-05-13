@@ -4,10 +4,45 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
+// Database connection
+var mongoose = require('mongoose');
+var mongoDB = 'mongodb://127.0.0.1/project';
+mongoose.connect(mongoDB);
+mongoose.Promise = global.Promise;
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+
+// Routes
 var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var clientRouter = require('./routes/clientRoutes');
+var roomRouter = require('./routes/roomRoutes');
+var staffRouter = require('./routes/staffRoutes');
+var packageRouter = require('./routes/packageRoutes');
+var roomHasPackageRouter = require('./routes/roomHasPackageRoutes');
+var clientHasRoomRouter = require('./routes/clientHasRoomRoutes');
+var ingredientRouter = require('./routes/ingredientRoutes');
+var mealRouter = require('./routes/mealRoutes');
+var orderRouter = require('./routes/orderRoutes');
 
 var app = express();
+
+// CORS
+var cors = require('cors');
+var allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+app.use(cors({
+  origin: function(origin, callback){
+    // allow requests with no origin
+    // (like mobile apps or curl requests)
+    if(!origin) return callback(null, true);
+    if(allowedOrigins.indexOf(origin) === -1){
+      var msg = 'The CORS policy for this site does not ' +
+          'allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  }
+}));
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -20,7 +55,15 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/clients', clientRouter);
+app.use('/rooms', roomRouter);
+app.use('/staffs', staffRouter);
+app.use('/packages', packageRouter);
+app.use('/roomHasPackages', roomHasPackageRouter);
+app.use('/clientHasRooms', clientHasRoomRouter);
+app.use('/ingredients', ingredientRouter);
+app.use('/meals', mealRouter);
+app.use('/orders', orderRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
