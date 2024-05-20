@@ -47,6 +47,16 @@ app.use(cors({
   }
 }));
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true if using HTTPS
+}));
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
