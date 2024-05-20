@@ -14,7 +14,6 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', function() {
   console.log('MongoDB connection successful!');
 });
-console.log(process.env.DB_CONNECTION_STRING)
 
 // Routes
 var indexRouter = require('./routes/index');
