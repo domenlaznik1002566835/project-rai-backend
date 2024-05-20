@@ -13,7 +13,7 @@ Smart Package System is a project designed to enable unlocking and managing a sm
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/smart-package-system.git
+   git clone https://github.com/domenlaznik1002566835/project-rai-backend
    ```
 
 2. Navigate to the project directory:
