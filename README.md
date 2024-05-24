@@ -36,6 +36,6 @@ Smart Package System is a project designed to enable unlocking and managing a sm
    npm start
    ```
 
-2. Open your browser and go to `http://localhost:3000` to access the user portal.
+2. Open your browser and go to `http://localhost:3001` to access the user portal.
 
 
