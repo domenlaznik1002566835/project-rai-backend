@@ -3,14 +3,20 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var bodyParser = require('body-parser');
+var session = require('express-session');
+
 
 // Database connection
+require('dotenv').config(); 
 var mongoose = require('mongoose');
-var mongoDB = 'mongodb://localhost:27017/project';
-mongoose.connect(mongoDB);
+mongoose.connect(process.env.DB_CONNECTION_STRING, { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+db.once('open', function() {
+  console.log('MongoDB connection successful!');
+});
 
 // Routes
 var indexRouter = require('./routes/index');
@@ -42,6 +48,16 @@ app.use(cors({
     }
     return callback(null, true);
   }
+}));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: false } // Set to true if using HTTPS
 }));
 
 

@@ -52,11 +52,11 @@ module.exports = {
      */
     create: function (req, res) {
         var client = new ClientModel({
-			id : req.body.id,
-			firstName : req.body.firstName,
-			lastName : req.body.lastName,
-			email : req.body.email,
-			password : req.body.password
+            id: req.body.id,
+            firstName: req.body.firstName,
+            lastName: req.body.lastName,
+            email: req.body.email,
+            password: req.body.password
         });
 
         client.save(function (err, client) {
@@ -66,6 +66,9 @@ module.exports = {
                     error: err
                 });
             }
+
+            // Create session after client is created
+            req.session.userId = client._id;
 
             return res.status(201).json(client);
         });
@@ -92,11 +95,11 @@ module.exports = {
             }
 
             client.id = req.body.id ? req.body.id : client.id;
-			client.firstName = req.body.firstName ? req.body.firstName : client.firstName;
-			client.lastName = req.body.lastName ? req.body.lastName : client.lastName;
-			client.email = req.body.email ? req.body.email : client.email;
-			client.password = req.body.password ? req.body.password : client.password;
-			
+            client.firstName = req.body.firstName ? req.body.firstName : client.firstName;
+            client.lastName = req.body.lastName ? req.body.lastName : client.lastName;
+            client.email = req.body.email ? req.body.email : client.email;
+            client.password = req.body.password ? req.body.password : client.password;
+
             client.save(function (err, client) {
                 if (err) {
                     return res.status(500).json({
@@ -124,7 +127,21 @@ module.exports = {
                 });
             }
 
-            return res.status(204).json();
+            // Destroy session after client is removed
+            if (req.session.userId === id) {
+                req.session.destroy(function(err) {
+                    if (err) {
+                        return res.status(500).json({
+                            message: 'Error when destroying session.',
+                            error: err
+                        });
+                    }
+
+                    return res.status(204).json();
+                });
+            } else {
+                return res.status(204).json();
+            }
         });
     }
 };
