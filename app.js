@@ -5,12 +5,13 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+var router = express.Router();
 
 
 // Database connection
 require('dotenv').config(); 
 var mongoose = require('mongoose');
-mongoose.connect(process.env.DB_CONNECTION_STRING, { useNewUrlParser: true, useUnifiedTopology: true });
+mongoose.connect(process.env.DB_CONNECTION_STRING);
 mongoose.Promise = global.Promise;
 var db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
@@ -54,7 +55,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: 'your-secret-string',
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Set to true if using HTTPS
@@ -99,4 +100,10 @@ app.use(function(err, req, res, next) {
   res.render('error', { title: 'Error' });
 });
 
+// GET endpoint
+router.get('/', function(req, res, next) {
+  res.json({ message: 'Hello, World!' });
+});
+
 module.exports = app;
+//module.exports = router;
