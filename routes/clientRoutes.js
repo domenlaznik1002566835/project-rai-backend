@@ -28,4 +28,9 @@ router.put('/:id', requireLogin, clientController.update);
  */
 router.delete('/:id', requireLogin, clientController.remove);
 
+/*
+ * POST login
+ */
+router.post('/login', clientController.login)
+
 module.exports = router;

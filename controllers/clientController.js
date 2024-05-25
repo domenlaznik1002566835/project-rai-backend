@@ -83,10 +83,10 @@ module.exports = {
                 });
             }
 
-            client.id = req.body.id ? req.body.id : client.id;
             client.firstName = req.body.firstName ? req.body.firstName : client.firstName;
             client.lastName = req.body.lastName ? req.body.lastName : client.lastName;
             client.email = req.body.email ? req.body.email : client.email;
+            client.username = req.body.username ? req.body.username : client.username;
             client.password = req.body.password ? req.body.password : client.password;
 
             await client.save();
@@ -112,7 +112,6 @@ module.exports = {
                 });
             }
 
-            // Destroy session after client is removed
             if (req.session.userId === id) {
                 req.session.destroy(function (err) {
                     if (err) {
@@ -133,5 +132,17 @@ module.exports = {
                 error: err
             });
         }
-    }
+    },
+
+login: async function (req, res, next) {
+        try {
+            const user = await ClientModel.authenticate(req.body.email, req.body.password);
+            req.session.userId = user._id;
+            return res.json(user);
+        } catch (err) {
+            var error = new Error('Wrong email or password');
+            error.status = 401;
+            return next(error);
+        }
+    },
 };
