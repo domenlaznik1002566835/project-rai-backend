@@ -52,8 +52,9 @@ module.exports = {
      */
     create: function (req, res) {
         var package = new PackageModel({
-			id : req.body.id,
-			code : req.body.code
+            code: req.body.code,
+            openTimestamp: req.body.openTimestamp || null,
+            closeTimestamp: req.body.closeTimestamp || null
         });
 
         package.save(function (err, package) {
@@ -88,9 +89,10 @@ module.exports = {
                 });
             }
 
-            package.id = req.body.id ? req.body.id : package.id;
-			package.code = req.body.code ? req.body.code : package.code;
-			
+            package.code = req.body.code ? req.body.code : package.code;
+            package.openTimestamp = req.body.openTimestamp ? req.body.openTimestamp : package.openTimestamp;
+            package.closeTimestamp = req.body.closeTimestamp ? req.body.closeTimestamp : package.closeTimestamp;
+            
             package.save(function (err, package) {
                 if (err) {
                     return res.status(500).json({
