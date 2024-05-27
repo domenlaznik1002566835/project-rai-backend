@@ -6,7 +6,8 @@ var clientSchema = new Schema({
     firstName: String,
     lastName: String,
     email: { type: String, required: true, unique: true },
-    password: String
+    password: String,
+    video2FAs: [{ type: Schema.Types.ObjectId, ref: 'Video2FA' }]
 });
 
 clientSchema.pre('save', function(next) {

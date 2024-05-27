@@ -30,6 +30,7 @@ var ingredientRouter = require('./routes/ingredientRoutes');
 var mealRouter = require('./routes/mealRoutes');
 var orderRouter = require('./routes/orderRoutes');
 var informationRouter = require('./routes/informationRoutes');
+var video2FARouter = require('./routes/video2FARoutes');
 
 var app = express();
 
@@ -82,6 +83,7 @@ app.use('/ingredients', ingredientRouter);
 app.use('/meals', mealRouter);
 app.use('/orders', orderRouter);
 app.use('/info', informationRouter);
+app.use('/video2fa', video2FARouter);  
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
