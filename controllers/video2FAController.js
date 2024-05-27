@@ -1,5 +1,5 @@
 const Video2FAModel = require('../models/video2FA');
-const ClientModel = require('../models/client');
+const ClientModel = require('../models/clientModel');
 const multer = require('multer');
 const path = require('path');
 
