@@ -50,24 +50,26 @@ module.exports = {
     /**
      * mealController.create()
      */
-    create: function (req, res) {
-        var meal = new MealModel({
-			name : req.body.name,
-			calories : req.body.calories,
-			price : req.body.price,
-			ingredients : req.body.ingredients
+    create: async function (req, res) {
+        const {name, calories, price, image, ingredients} = req.body;
+
+        const meal = new MealModel({
+            name: name,
+            calories: calories,
+            price: price,
+            image: image,
+            ingredients: ingredients
         });
 
-        meal.save(function (err, meal) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating meal',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(meal);
-        });
+        try {
+            await meal.save();
+            return res.json(meal);
+        } catch(err) {
+            return res.status(500).json({
+                message: 'Error when creating meal',
+                error: err
+            });
+        }
     },
 
     /**

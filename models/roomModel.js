@@ -4,6 +4,7 @@ var Schema   = mongoose.Schema;
 var roomSchema = new Schema({
 	'number' : Number,
 	'size' : Number,
+	'type' : Number,
 	'occupied' : Boolean
 });
 

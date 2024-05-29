@@ -51,23 +51,24 @@ module.exports = {
      * informationController.create()
      */
     create: function (req, res) {
-        var information = new InformationModel({
-			title : req.body.title,
-			text : req.body.text,
-			image : req.body.image,
-			date : req.body.date
+        const {title, text, image, date} = req.body;
+
+        const information = new InformationModel({
+            title: title,
+            text: text,
+            image: image,
+            date: date,
         });
 
-        information.save(function (err, information) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating information',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(information);
-        });
+        try {
+            information.save();
+            return res.json(information);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating information',
+                error: err
+            });
+        }
     },
 
     /**

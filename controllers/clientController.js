@@ -49,13 +49,13 @@ module.exports = {
     register: async function (req, res) {
         const {firstName, lastName, email, username, password} = req.body;
 
-        let userExists = await ClientModel.findOne({username});
+        let userExists = await ClientModel.findOne({username: username});
         if (userExists) {
-            return res.status(400).json({error: "Username already exists"});
+            return res.status(400).json({error: 1, message: "Username already exists"});
         }
-        let emailExists = await ClientModel.findOne({email: x});
+        let emailExists = await ClientModel.findOne({email: email});
         if (emailExists) {
-            return res.status(400).json({error: "Email already exists"});
+            return res.status(400).json({error: 1, message: "Email already exists"});
         }
 
         const client = new ClientModel({

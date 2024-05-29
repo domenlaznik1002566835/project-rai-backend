@@ -50,23 +50,34 @@ module.exports = {
     /**
      * roomController.create()
      */
-    create: function (req, res) {
-        var room = new RoomModel({
-			number : req.body.number,
-			size : req.body.size,
-			occupied : req.body.occupied
-        });
+    create: async function (req, res) {
+        const {number, size, type} = req.body;
 
-        room.save(function (err, room) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating room',
-                    error: err
-                });
+        let roomExists = await RoomModel.findOne({number: number});
+        if(roomExists){
+            return res.status(400).json({error: 1, message: "Room already exists"});
+        }
+        if(type !== 0 || type !== 1 || type !== 2 || type !== 3) {
+            return res.status(400).json({error: 1, message: "Invalid room type"});
+        }
+
+        const room = new RoomModel({
+                number: number,
+                size: size,
+                type: type,
+                occupied: false
             }
+        );
 
-            return res.status(201).json(room);
-        });
+        try {
+            await room.save();
+            return res.json(room);
+        } catch(err) {
+            return res.status(500).json({
+                message: 'Error when creating room',
+                error: err
+            });
+        }
     },
 
     /**

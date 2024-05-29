@@ -50,23 +50,24 @@ module.exports = {
     /**
      * ingredientController.create()
      */
-    create: function (req, res) {
-        var ingredient = new IngredientModel({
-			name : req.body.name,
-			calories : req.body.calories,
-			vegeterian : req.body.vegeterian
+    create: async function (req, res) {
+        const {name, calories, vegetarian} = req.body;
+
+        const ingredient = new IngredientModel({
+            name: name,
+            calories: calories,
+            vegetarian: vegetarian
         });
 
-        ingredient.save(function (err, ingredient) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating ingredient',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(ingredient);
-        });
+        try {
+            await ingredient.save();
+            return res.json(ingredient);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating ingredient',
+                error: err
+            });
+        }
     },
 
     /**
