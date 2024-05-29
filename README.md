@@ -38,4 +38,6 @@ Smart Package System is a project designed to enable unlocking and managing a sm
 
 2. Open your browser and go to `http://localhost:3000` to access the user portal.
 
+3.
+
 
