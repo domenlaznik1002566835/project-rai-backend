@@ -50,26 +50,30 @@ module.exports = {
     /**
      * staffController.create()
      */
-    create: function (req, res) {
-        var staff = new StaffModel({
-			id : req.body.id,
-			firstName : req.body.firstName,
-			lastName : req.body.lastName,
-			username : req.body.username,
-			password : req.body.password,
-			level : req.body.level
+    create: async function (req, res) {
+        const {firstName, lastName, username, password, level} = req.body;
+
+        if(level !== 0 || level !== 1) {
+            return res.status(400).json({error: 1, message: "Invalid staff level"});
+        }
+
+        const staff = new StaffModel({
+            firstName: firstName,
+            lastName: lastName,
+            username: username,
+            password: password,
+            level: level
         });
 
-        staff.save(function (err, staff) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating staff',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(staff);
-        });
+        try {
+            await staff.save();
+            return res.json(staff);
+        } catch(err) {
+            return res.status(500).json({
+                message: 'Error when creating staff',
+                error: err
+            });
+        }
     },
 
     /**

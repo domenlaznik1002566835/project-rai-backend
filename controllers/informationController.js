@@ -10,17 +10,16 @@ module.exports = {
     /**
      * informationController.list()
      */
-    list: function (req, res) {
-        InformationModel.find(function (err, informations) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting information.',
-                    error: err
-                });
-            }
-
-            return res.json(informations);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await InformationModel.find();
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
@@ -50,7 +49,7 @@ module.exports = {
     /**
      * informationController.create()
      */
-    create: function (req, res) {
+    create: async function (req, res) {
         const {title, text, image, date} = req.body;
 
         const information = new InformationModel({

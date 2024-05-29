@@ -10,17 +10,16 @@ module.exports = {
     /**
      * ingredientController.list()
      */
-    list: function (req, res) {
-        IngredientModel.find(function (err, ingredients) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting ingredient.',
-                    error: err
-                });
-            }
-
-            return res.json(ingredients);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await IngredientModel.find();
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**

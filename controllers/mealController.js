@@ -10,17 +10,16 @@ module.exports = {
     /**
      * mealController.list()
      */
-    list: function (req, res) {
-        MealModel.find(function (err, meals) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting meal.',
-                    error: err
-                });
-            }
-
-            return res.json(meals);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await MealModel.find();
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**

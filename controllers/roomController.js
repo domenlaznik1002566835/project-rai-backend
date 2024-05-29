@@ -10,17 +10,16 @@ module.exports = {
     /**
      * roomController.list()
      */
-    list: function (req, res) {
-        RoomModel.find(function (err, rooms) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting room.',
-                    error: err
-                });
-            }
-
-            return res.json(rooms);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await RoomModel.find();
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
