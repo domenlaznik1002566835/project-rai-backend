@@ -55,7 +55,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 app.use(session({
-    secret: process.env.SESSION_SECRET,
+    secret: 'your secret string',
     resave: false,
     saveUninitialized: true,
     cookie: { secure: false } // Set to true if using HTTPS

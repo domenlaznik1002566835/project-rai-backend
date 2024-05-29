@@ -46,29 +46,38 @@ module.exports = {
     /**
      * clientController.create()
      */
-    create: async function (req, res) {
+    register: async function (req, res) {
+        const {firstName, lastName, email, username, password} = req.body;
+
+        let userExists = await ClientModel.findOne({username});
+        if (userExists) {
+            return res.status(400).json({error: "Username already exists"});
+        }
+        let emailExists = await ClientModel.findOne({email: x});
+        if (emailExists) {
+            return res.status(400).json({error: "Email already exists"});
+        }
+
+        const client = new ClientModel({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                username: username,
+                password: password
+            }
+        );
+
         try {
-            const client = new ClientModel({
-                firstName: req.body.firstName,
-                lastName: req.body.lastName,
-                email: req.body.email,
-                password: req.body.password
-            });
-
             await client.save();
-
-            // Create session after client is created
-            req.session.userId = client._id;
-
-            return res.status(201).json(client);
+            return res.json(client);
         } catch (err) {
             return res.status(500).json({
                 message: 'Error when creating client',
                 error: err
             });
         }
-    },
-
+    }
+    ,
     /**
      * clientController.update()
      */
@@ -133,16 +142,15 @@ module.exports = {
             });
         }
     },
-
-login: async function (req, res, next) {
-        try {
-            const user = await ClientModel.authenticate(req.body.email, req.body.password);
-            req.session.userId = user._id;
-            return res.json(user);
-        } catch (err) {
-            var error = new Error('Wrong email or password');
-            error.status = 401;
-            return next(error);
-        }
-    },
+    login: async function (req, res, next) {
+            try {
+                const user = await ClientModel.authenticate(req.body.email, req.body.password);
+                req.session.userId = user._id;
+                return res.json(user);
+            } catch (err) {
+                var error = new Error('Wrong email or password');
+                error.status = 401;
+                return next(error);
+            }
+        },
 };

@@ -16,7 +16,7 @@ router.get('/:id', requireLogin, clientController.show);
 /*
  * POST
  */
-router.post('/', clientController.create);
+router.post('/register', clientController.register);
 
 /*
  * PUT
