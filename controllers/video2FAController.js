@@ -98,13 +98,12 @@ exports.verifyVideo = async (req, res) => {
   }
 };
 
-
 exports.authenticate = async (req, res) => {
   const { email, password } = req.body;
   
   try {
     const user = await ClientModel.authenticate(email, password);
-    const token = jwt.sign({ _id: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+    const token = jwt.sign({ _id: user._id }, process.env.SESSION_SECRET, { expiresIn: '1h' });
     res.status(200).json({ token });
   } catch (error) {
     res.status(401).send(error.message);
