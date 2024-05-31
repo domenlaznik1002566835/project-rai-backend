@@ -1,4 +1,5 @@
 var RoomModel = require('../models/roomModel.js');
+const StaffModel = require("../models/staffModel");
 
 /**
  * roomController.js
@@ -10,33 +11,26 @@ module.exports = {
     /**
      * roomController.list()
      */
-    list: function (req, res) {
-        RoomModel.find(function (err, rooms) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting room.',
-                    error: err
-                });
-            }
-
-            return res.json(rooms);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await RoomModel.find().sort({created: -1});
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
      * roomController.show()
      */
-    show: function (req, res) {
+    show: async function (req, res) {
         var id = req.params.id;
 
-        RoomModel.findOne({_id: id}, function (err, room) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting room.',
-                    error: err
-                });
-            }
-
+        try {
+            const room = await RoomModel.findOne({_id: id});
             if (!room) {
                 return res.status(404).json({
                     message: 'No such room'
@@ -44,29 +38,45 @@ module.exports = {
             }
 
             return res.json(room);
-        });
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting room.',
+                error: err
+            });
+        }
     },
 
     /**
      * roomController.create()
      */
-    create: function (req, res) {
-        var room = new RoomModel({
-			number : req.body.number,
-			size : req.body.size,
-			occupied : req.body.occupied
-        });
+    create: async function (req, res) {
+        const {number, size, type} = req.body;
 
-        room.save(function (err, room) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating room',
-                    error: err
-                });
+        let roomExists = await RoomModel.findOne({number: number});
+        if(roomExists){
+            return res.status(400).json({error: 1, message: "Room already exists"});
+        }
+        if(type !== 0 || type !== 1 || type !== 2 || type !== 3) {
+            return res.status(400).json({error: 1, message: "Invalid room type"});
+        }
+
+        const room = new RoomModel({
+                number: number,
+                size: size,
+                type: type,
+                occupied: false
             }
+        );
 
-            return res.status(201).json(room);
-        });
+        try {
+            await room.save();
+            return res.json(room);
+        } catch(err) {
+            return res.status(500).json({
+                message: 'Error when creating room',
+                error: err
+            });
+        }
     },
 
     /**

@@ -4,9 +4,11 @@ var Schema   = mongoose.Schema;
 var staffSchema = new Schema({
 	'firstName' : String,
 	'lastName' : String,
-	'username' : String,
+	'email' : String,
 	'password' : String,
-	'level' : Number
+	'level' : Number,
+	'created' : { type: Date, default: Date.now },
+	'updated' : { type: Date, default: Date.now }
 });
 
 module.exports = mongoose.model('staff', staffSchema);
