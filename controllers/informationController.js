@@ -10,32 +10,26 @@ module.exports = {
     /**
      * informationController.list()
      */
-    list: function (req, res) {
-        InformationModel.find(function (err, informations) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting information.',
-                    error: err
-                });
-            }
-
-            return res.json(informations);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await InformationModel.find().sort('-created');
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
      * informationController.show()
      */
-    show: function (req, res) {
+    show: async function (req, res) {
         var id = req.params.id;
 
-        InformationModel.findOne({_id: id}, function (err, information) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting information.',
-                    error: err
-                });
-            }
+        try {
+            const information = await InformationModel.findOne({_id: id});
 
             if (!information) {
                 return res.status(404).json({
@@ -44,30 +38,42 @@ module.exports = {
             }
 
             return res.json(information);
-        });
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting information.',
+                error: err
+            });
+        }
     },
 
     /**
      * informationController.create()
      */
-    create: function (req, res) {
-        var information = new InformationModel({
-			title : req.body.title,
-			text : req.body.text,
-			image : req.body.image,
-			date : req.body.date
+    create: async function (req, res) {
+        const {title, text} = req.body;
+
+        var imagePath = null;
+
+        if(req.file) {
+            imagePath = req.file.path;
+        }
+
+        const information = new InformationModel({
+            title: title,
+            text: text,
+            image: imagePath,
+            date: Date.now()
         });
 
-        information.save(function (err, information) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating information',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(information);
-        });
+        try {
+            information.save();
+            return res.json(information);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating information',
+                error: err
+            });
+        }
     },
 
     /**

@@ -15,7 +15,7 @@ router.get('/:id', staffController.show);
 /*
  * POST
  */
-router.post('/', staffController.create);
+router.post('/', staffController.register);
 
 /*
  * PUT

@@ -10,17 +10,16 @@ module.exports = {
     /**
      * ingredientController.list()
      */
-    list: function (req, res) {
-        IngredientModel.find(function (err, ingredients) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting ingredient.',
-                    error: err
-                });
-            }
-
-            return res.json(ingredients);
-        });
+    list: async function (req, res) {
+        try {
+            const clients = await IngredientModel.find();
+            return res.json(clients);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
@@ -50,23 +49,24 @@ module.exports = {
     /**
      * ingredientController.create()
      */
-    create: function (req, res) {
-        var ingredient = new IngredientModel({
-			name : req.body.name,
-			calories : req.body.calories,
-			vegeterian : req.body.vegeterian
+    create: async function (req, res) {
+        const {name, grams, calories, vegetarian} = req.body;
+        const ingredient = new IngredientModel({
+            name: name,
+            grams: grams,
+            calories: calories,
+            vegetarian: vegetarian
         });
 
-        ingredient.save(function (err, ingredient) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating ingredient',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(ingredient);
-        });
+        try {
+            await ingredient.save();
+            return res.json(ingredient);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating ingredient',
+                error: err
+            });
+        }
     },
 
     /**
