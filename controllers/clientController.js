@@ -1,4 +1,5 @@
 var ClientModel = require('../models/clientModel.js');
+var StaffModel = require('../models/staffModel.js');
 
 /**
  * clientController.js
@@ -12,7 +13,7 @@ module.exports = {
      */
     list: async function (req, res) {
         try {
-            const clients = await ClientModel.find();
+            const clients = await ClientModel.find().sort({created: -1});
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
@@ -27,17 +28,19 @@ module.exports = {
      */
     show: async function (req, res) {
         var id = req.params.id;
+
         try {
-            const client = await ClientModel.findOne({ _id: id });
-            if (!client) {
+            const staff = await ClientModel.findOne({_id: id});
+            if (!staff) {
                 return res.status(404).json({
                     message: 'No such client'
                 });
             }
-            return res.json(client);
+
+            return res.json(staff);
         } catch (err) {
             return res.status(500).json({
-                message: 'Error when getting client.',
+                message: 'Error when getting staff.',
                 error: err
             });
         }
@@ -47,22 +50,25 @@ module.exports = {
      * clientController.create()
      */
     register: async function (req, res) {
-        const {firstName, lastName, email, username, password} = req.body;
+        const {firstName, lastName, email, password} = req.body;
 
-        let userExists = await ClientModel.findOne({username: username});
-        if (userExists) {
-            return res.status(400).json({error: 1, message: "Username already exists"});
-        }
         let emailExists = await ClientModel.findOne({email: email});
         if (emailExists) {
             return res.status(400).json({error: 1, message: "Email already exists"});
+        }
+        let emailStaffExists = await StaffModel.findOne({email: email});
+        if (emailStaffExists) {
+            return res.status(400).json({error: 1, message: "Email already exists"});
+        }
+        const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({error: 1, message: "Invalid email format"});
         }
 
         const client = new ClientModel({
                 firstName: firstName,
                 lastName: lastName,
                 email: email,
-                username: username,
                 password: password
             }
         );
@@ -143,14 +149,16 @@ module.exports = {
         }
     },
     login: async function (req, res, next) {
-            try {
-                const user = await ClientModel.authenticate(req.body.email, req.body.password);
-                req.session.userId = user._id;
-                return res.json(user);
-            } catch (err) {
-                var error = new Error('Wrong email or password');
-                error.status = 401;
-                return next(error);
-            }
-        },
+        const {email, password} = req.body;
+        try {
+            const client = await ClientModel.authenticate(email, password);
+            req.session.userId = client._id;
+            return res.json(client);
+        } catch (err) {
+            return res.status(401).json({
+                message: 'Invalid email or password',
+                error: err
+            });
+        }
+    },
 };

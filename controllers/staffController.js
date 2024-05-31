@@ -1,4 +1,5 @@
 var StaffModel = require('../models/staffModel.js');
+const ClientModel = require("../models/clientModel");
 
 /**
  * staffController.js
@@ -10,33 +11,26 @@ module.exports = {
     /**
      * staffController.list()
      */
-    list: function (req, res) {
-        StaffModel.find(function (err, staffs) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting staff.',
-                    error: err
-                });
-            }
-
-            return res.json(staffs);
-        });
+    list: async function (req, res) {
+        try {
+            const staff = await StaffModel.find().sort({level: 1, created: -1});
+            return res.json(staff);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
     },
 
     /**
      * staffController.show()
      */
-    show: function (req, res) {
+    show: async function (req, res) {
         var id = req.params.id;
 
-        StaffModel.findOne({_id: id}, function (err, staff) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting staff.',
-                    error: err
-                });
-            }
-
+        try {
+            const staff = await StaffModel.findOne({_id: id});
             if (!staff) {
                 return res.status(404).json({
                     message: 'No such staff'
@@ -44,37 +38,56 @@ module.exports = {
             }
 
             return res.json(staff);
-        });
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting staff.',
+                error: err
+            });
+        }
     },
 
     /**
      * staffController.create()
      */
-    create: async function (req, res) {
-        const {firstName, lastName, username, password, level} = req.body;
+    register: async function (req, res) {
+        const {firstName, lastName, email, password, level} = req.body;
 
-        if(level !== 0 || level !== 1) {
+        let emailExists = await ClientModel.findOne({email: email});
+        if (emailExists) {
+            return res.status(400).json({error: 1, message: "Email already exists"});
+        }
+        let emailStaffExists = await StaffModel.findOne({email: email});
+        if (emailStaffExists) {
+            return res.status(400).json({error: 1, message: "Email already exists"});
+        }
+        const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({error: 1, message: "Invalid email format"});
+        }
+        if(level !== 0 && level !== 1 && level !== 2 && level !== 3) {
             return res.status(400).json({error: 1, message: "Invalid staff level"});
         }
 
         const staff = new StaffModel({
-            firstName: firstName,
-            lastName: lastName,
-            username: username,
-            password: password,
-            level: level
-        });
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password,
+                level: level
+            }
+        );
 
         try {
             await staff.save();
             return res.json(staff);
-        } catch(err) {
+        } catch (err) {
             return res.status(500).json({
                 message: 'Error when creating staff',
                 error: err
             });
         }
-    },
+    }
+    ,
 
     /**
      * staffController.update()

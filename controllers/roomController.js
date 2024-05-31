@@ -1,4 +1,5 @@
 var RoomModel = require('../models/roomModel.js');
+const StaffModel = require("../models/staffModel");
 
 /**
  * roomController.js
@@ -12,7 +13,7 @@ module.exports = {
      */
     list: async function (req, res) {
         try {
-            const clients = await RoomModel.find();
+            const clients = await RoomModel.find().sort({created: -1});
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
@@ -25,17 +26,11 @@ module.exports = {
     /**
      * roomController.show()
      */
-    show: function (req, res) {
+    show: async function (req, res) {
         var id = req.params.id;
 
-        RoomModel.findOne({_id: id}, function (err, room) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting room.',
-                    error: err
-                });
-            }
-
+        try {
+            const room = await RoomModel.findOne({_id: id});
             if (!room) {
                 return res.status(404).json({
                     message: 'No such room'
@@ -43,7 +38,12 @@ module.exports = {
             }
 
             return res.json(room);
-        });
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting room.',
+                error: err
+            });
+        }
     },
 
     /**
