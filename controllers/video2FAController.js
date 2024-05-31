@@ -1,11 +1,11 @@
+const axios = require('axios');
 const Video2FAModel = require('../models/video2FA');
 const ClientModel = require('../models/clientModel');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
 const jwt = require('jsonwebtoken');
-require('dotenv').config(); 
+require('dotenv').config();
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -68,7 +68,7 @@ exports.getVideo = async (req, res) => {
 
     res.sendFile(path.resolve(videoPath));
   } catch (error) {
-    console.error(error); 
+    console.error(error);
     res.status(500).send('Error retrieving video.');
   }
 };
@@ -81,20 +81,20 @@ exports.verifyVideo = async (req, res) => {
   }
 
   try {
-    const process = spawn('python3', ['path/to/your/verify_script.py', videoPath, clientId]);
+    const formData = new FormData();
+    formData.append('video', fs.createReadStream(videoPath));
+    formData.append('client_id', clientId);
 
-    process.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-      res.status(200).send(data.toString());
+    const response = await axios.post('http://localhost:5000/upload_video', formData, {
+      headers: {
+        ...formData.getHeaders(),
+      },
     });
 
-    process.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
-      res.status(500).send('Error verifying video.');
-    });
+    res.status(200).send(response.data.result);
   } catch (error) {
-    console.error(error); 
-    res.status(500).send('Error processing verification.');
+    console.error(error);
+    res.status(500).send('Error verifying video.');
   }
 };
 
