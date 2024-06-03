@@ -12,11 +12,11 @@ module.exports = {
      */
     list: async function (req, res) {
         try {
-            const clients = await IngredientModel.find();
+            const clients = await IngredientModel.find().sort('+name');
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
-                message: 'Error when getting client.',
+                message: 'Error when getting ingredient.',
                 error: err
             });
         }
