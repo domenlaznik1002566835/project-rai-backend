@@ -7,6 +7,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
+// Konfiguracija za nalaganje datotek z uporabo multerja
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -18,7 +19,8 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-exports.uploadVideo = [
+// Funkcija za nalaganje videoposnetka in preverjanje identitete
+exports.uploadAndVerifyVideo = [
   upload.single('video'),
   async (req, res) => {
     if (!req.file) {
@@ -46,14 +48,21 @@ exports.uploadVideo = [
       client.video2FAs.push(video2FA._id);
       await client.save();
 
-      res.status(200).send('Video saved successfully.');
+      // Pošljemo zahtevo Flask aplikaciji za preverjanje videoposnetka
+      const response = await axios.post('http://localhost:5000/verify_video', {
+        video_filename: path.basename(req.file.path),
+        client_id: clientId
+      });
+
+      res.status(200).send(response.data.result);
     } catch (error) {
       console.error(error);
-      res.status(500).send('Error saving video.');
+      res.status(500).send('Error processing video.');
     }
   }
 ];
 
+// Funkcija za pridobivanje videoposnetka
 exports.getVideo = async (req, res) => {
   try {
     const video2FA = await Video2FAModel.findById(req.params.id);
@@ -73,6 +82,7 @@ exports.getVideo = async (req, res) => {
   }
 };
 
+// Funkcija za preverjanje videoposnetka (optional, odvisno od impl)
 exports.verifyVideo = async (req, res) => {
   const { videoPath, clientId } = req.body;
 
@@ -81,14 +91,9 @@ exports.verifyVideo = async (req, res) => {
   }
 
   try {
-    const formData = new FormData();
-    formData.append('video', fs.createReadStream(videoPath));
-    formData.append('client_id', clientId);
-
-    const response = await axios.post('http://localhost:5000/upload_video', formData, {
-      headers: {
-        ...formData.getHeaders(),
-      },
+    const response = await axios.post('http://localhost:5000/verify_video', {
+      video_filename: path.basename(videoPath),
+      client_id: clientId
     });
 
     res.status(200).send(response.data.result);
@@ -98,12 +103,17 @@ exports.verifyVideo = async (req, res) => {
   }
 };
 
+// Funkcija za avtentikacijo uporabnika, lahko je tudi v clientController.js
 exports.authenticate = async (req, res) => {
   const { email, password } = req.body;
   
   try {
     const user = await ClientModel.authenticate(email, password);
     const token = jwt.sign({ _id: user._id }, process.env.SESSION_SECRET, { expiresIn: '1h' });
+
+    // Po prijavi pošljemo potisno obvestilo za 2FA (zakomentirano)
+    // await sendPushNotification(user.registrationId, "2FA Verification", "Please verify your login attempt.");
+
     res.status(200).json({ token });
   } catch (error) {
     res.status(401).send(error.message);

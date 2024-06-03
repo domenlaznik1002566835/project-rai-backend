@@ -33,4 +33,11 @@ router.delete('/:id', requireLogin, clientController.remove);
  */
 router.post('/login', clientController.login)
 
+router.post('/clients/logout', clientController.logout);
+
+router.post('/register-fcm-token', clientController.registerFCMToken);
+
+app.post('/send-notification', clientController.sendNotification);
+
+
 module.exports = router;

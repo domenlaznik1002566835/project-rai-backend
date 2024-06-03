@@ -42,7 +42,7 @@ var app = express();
 
 // CORS
 var cors = require('cors');
-var allowedOrigins = ['http://localhost:3000', 'http://localhost:3001'];
+var allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://10.0.2.2:3001'];
 app.use(cors({
   origin: function(origin, callback){
     // allow requests with no origin
