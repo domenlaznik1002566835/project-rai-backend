@@ -160,28 +160,37 @@ module.exports = {
     login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
-
+    
             const user = await ClientModel.authenticate(req.body.email, req.body.password);
             if (!user) {
                 console.error('Authentication failed: User not found');
                 throw new Error('User not found.');
             }
-
+    
             req.session.userId = user._id;
-
-            const tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
-            if (tokenRecord) {
-                console.log('Token record found:', tokenRecord);
-                if (tokenRecord.fcmToken) {
-                    console.log('FCM token:', tokenRecord.fcmToken);
-                    console.log('Attempting to send push notification');
-                    await sendPushNotification(tokenRecord.fcmToken, "2FA Verification", "Please verify your login attempt.");
-                    console.log('Push notification sent successfully');
+    
+            const { fcmToken } = req.body;
+    
+            if (fcmToken) {
+                let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
+                if (tokenRecord) {
+                    tokenRecord.fcmToken = fcmToken;
+                    console.log('Token record updated:', tokenRecord);
+                } else {
+                    tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
+                    console.log('New token record created:', tokenRecord);
                 }
-            } else {
-                console.log('No token record found for user:', user._id);
+    
+                await tokenRecord.save();
+                console.log('FCM token registered successfully:', tokenRecord);
+    
+                console.log('Attempting to send push notification');
+                await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
+                console.log('Push notification sent successfully');
+            } else { //web trenutno
+                console.log('No FCM token provided, skipping push notification');
             }
-
+    
             return res.json({ success: true, message: "Login successful", userId: user._id });
         } catch (err) {
             console.error('Login error:', err);
@@ -189,7 +198,7 @@ module.exports = {
             error.status = 401;
             return next(error);
         }
-    },
+    },    
 
     registerFCMToken: async function (req, res) {
         const { userId, fcmToken } = req.body;
