@@ -11,6 +11,7 @@ router.get('/', staffController.list);
  * GET
  */
 router.get('/:id', staffController.show);
+router.get('/email/:email', staffController.showByEmail);
 
 /*
  * POST

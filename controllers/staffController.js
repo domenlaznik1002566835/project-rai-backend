@@ -46,6 +46,26 @@ module.exports = {
         }
     },
 
+    showByEmail: async function (req, res) {
+        var email = req.params.email;
+
+        try {
+            const staff = await StaffModel.findOne({email: email});
+            if (!staff) {
+                return res.status(404).json({
+                    message: 'No such staff'
+                });
+            }
+
+            return res.json(staff);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting staff.',
+                error: err
+            });
+        }
+    }
+    ,
     /**
      * staffController.create()
      */
