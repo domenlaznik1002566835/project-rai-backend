@@ -10,19 +10,10 @@ const { sendPushNotification } = require('../middleware/sendPushNotifications');
 const FCMTokenModel = require('../models/FCMtokenModel');
 var StaffModel = require('../models/staffModel.js');
 
-
-/**
- * clientController.js
- *
- * @description :: Server-side logic for managing clients.
- */
 module.exports = {
-    /**
-     * clientController.list()
-     */
     list: async function (req, res) {
         try {
-            const clients = await ClientModel.find().sort({created: -1});
+            const clients = await ClientModel.find().sort({ created: -1 });
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
@@ -32,58 +23,52 @@ module.exports = {
         }
     },
 
-    /**
-     * clientController.show()
-     */
     show: async function (req, res) {
         var id = req.params.id;
 
         try {
-            const staff = await ClientModel.findOne({_id: id});
-            if (!staff) {
+            const client = await ClientModel.findOne({ _id: id });
+            if (!client) {
                 return res.status(404).json({
                     message: 'No such client'
                 });
             }
 
-            return res.json(staff);
+            return res.json(client);
         } catch (err) {
             return res.status(500).json({
-                message: 'Error when getting staff.',
+                message: 'Error when getting client.',
                 error: err
             });
         }
     },
 
-    /**
-     * clientController.create()
-     */
-    register: async function (req, res) {
-        const {firstName, lastName, email, password} = req.body;
+    create: async function (req, res) {
+        const { firstName, lastName, email, password } = req.body;
 
-        let emailExists = await ClientModel.findOne({email: email});
+        let emailExists = await ClientModel.findOne({ email: email });
         if (emailExists) {
-            return res.status(400).json({error: 1, message: "A client with this email already exists"});
+            return res.status(400).json({ error: 1, message: "A client with this email already exists" });
         }
-        let emailStaffExists = await StaffModel.findOne({email: email});
+        let emailStaffExists = await StaffModel.findOne({ email: email });
         if (emailStaffExists) {
-            return res.status(400).json({error: 1, message: "A staff member with this email already exists"});
+            return res.status(400).json({ error: 1, message: "A staff member with this email already exists" });
         }
         const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
         if (!emailRegex.test(email)) {
-            return res.status(400).json({error: 1, message: "Invalid email format"});
+            return res.status(400).json({ error: 1, message: "Invalid email format" });
         }
 
         const client = new ClientModel({
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                password: password
-            }
-        );
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: password
+        });
 
         try {
             await client.save();
+            req.session.userId = client._id;
             return res.json(client);
         } catch (err) {
             return res.status(500).json({
@@ -91,11 +76,8 @@ module.exports = {
                 error: err
             });
         }
-    }
-    ,
-    /**
-     * clientController.update()
-     */
+    },
+
     update: async function (req, res) {
         var id = req.params.id;
         try {
@@ -123,9 +105,6 @@ module.exports = {
         }
     },
 
-    /**
-     * clientController.remove()
-     */
     remove: async function (req, res) {
         var id = req.params.id;
         try {
@@ -179,7 +158,7 @@ module.exports = {
         }
     },
 
-login: async function (req, res, next) {
+    login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
     
@@ -193,25 +172,28 @@ login: async function (req, res, next) {
     
             const { fcmToken } = req.body;
     
-            if (fcmToken) {
-                let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
-                if (tokenRecord) {
-                    tokenRecord.fcmToken = fcmToken;
-                    console.log('Token record updated:', tokenRecord);
-                } else {
-                    tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
-                    console.log('New token record created:', tokenRecord);
-                }
+            console.log('FCM Token received:', fcmToken);
     
-                await tokenRecord.save();
-                console.log('FCM token registered successfully:', tokenRecord);
-    
-                console.log('Attempting to send push notification');
-                await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
-                console.log('Push notification sent successfully');
-            } else {
-                console.log('No FCM token provided, skipping push notification');
+            if (!fcmToken) {
+                console.error('FCM token is required');
+                throw new Error('FCM token is required.');
             }
+    
+            let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
+            if (tokenRecord) {
+                tokenRecord.fcmToken = fcmToken;
+                console.log('Token record updated:', tokenRecord);
+            } else {
+                tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
+                console.log('New token record created:', tokenRecord);
+            }
+    
+            await tokenRecord.save();
+            console.log('FCM token registered successfully:', tokenRecord);
+    
+            console.log('Attempting to send push notification');
+            await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
+            console.log('Push notification sent successfully');
     
             return res.json({ success: true, message: "Login successful", userId: user._id });
         } catch (err) {
@@ -220,7 +202,8 @@ login: async function (req, res, next) {
             error.status = 401;
             return next(error);
         }
-    },    
+    },
+    
 
     registerFCMToken: async function (req, res) {
         const { userId, fcmToken } = req.body;
@@ -277,20 +260,17 @@ login: async function (req, res, next) {
         }
     },
 
-    /**
-     * clientController.uploadVideo()
-     */
     uploadVideo: async function (req, res) {
         upload.single('video')(req, res, async function (err) {
             if (err) {
                 return res.status(500).json({ message: 'Error uploading video', error: err });
             }
-            
+
             const userId = req.session.userId;
             if (!userId) {
                 return res.status(401).json({ message: 'Unauthorized' });
             }
-            
+
             const filePath = req.file.path;
             try {
                 const video2FA = new Video2FAModel({
@@ -305,16 +285,12 @@ login: async function (req, res, next) {
         });
     },
 
-    /**
-     * clientController.start2FA()
-     */
     start2FA: async function (req, res) {
         const userId = req.session.userId;
         if (!userId) {
             return res.status(401).json({ message: 'Unauthorized' });
         }
 
-        // Pošljite push notifikacijo ali začnite postopek zajema videa v mobilni aplikaciji
         const tokenRecord = await FCMTokenModel.findOne({ userId });
         if (tokenRecord && tokenRecord.fcmToken) {
             await sendPushNotification(tokenRecord.fcmToken, "2FA Verification", "Please verify your login attempt.");
@@ -324,9 +300,6 @@ login: async function (req, res, next) {
         }
     },
 
-    /**
-     * clientController.verify2FA()
-     */
     verify2FA: async function (req, res) {
         const userId = req.session.userId;
         if (!userId) {
@@ -338,7 +311,6 @@ login: async function (req, res, next) {
             return res.status(400).json({ message: 'Invalid video path' });
         }
 
-        // Pošljite video na Python API za obdelavo
         try {
             const response = await axios.post('http://localhost:5000/process_video', { file_path: videoPath });
             if (response.data.success) {
@@ -349,5 +321,5 @@ login: async function (req, res, next) {
         } catch (err) {
             return res.status(500).json({ message: 'Error processing video', error: err });
         }
-    },
+    }
 };

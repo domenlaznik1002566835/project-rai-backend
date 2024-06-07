@@ -9,6 +9,11 @@ async function sendPushNotification(registrationToken, title, body) {
     token: registrationToken
   };
 
+  console.log('Preparing to send notification with the following details:');
+  console.log(`Title: ${title}`);
+  console.log(`Body: ${body}`);
+  console.log(`Token: ${registrationToken}`);
+
   try {
     const response = await admin.messaging().send(message);
     console.log('Successfully sent message:', response);

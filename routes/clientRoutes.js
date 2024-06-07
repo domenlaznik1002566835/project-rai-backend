@@ -2,6 +2,8 @@ var express = require('express');
 var router = express.Router();
 var clientController = require('../controllers/clientController.js');
 var requireLogin = require('../middleware/requireLogin.js');
+var multer = require('multer');
+var upload = multer({ dest: 'uploads/' });
 
 /*
  * GET
@@ -11,12 +13,12 @@ router.get('/', clientController.list);
 /*
  * GET
  */
-router.get('/:id', /*requireLogin,*/ clientController.show);
+router.get('/:id', requireLogin, clientController.show);
 
 /*
  * POST
  */
-router.post('/', clientController.register);
+router.post('/', clientController.create);
 
 /*
  * PUT
@@ -33,30 +35,21 @@ router.delete('/:id', requireLogin, clientController.remove);
  */
 router.post('/login', clientController.login);
 
-/*
- * POST logout
- */
-router.post('/logout', requireLogin, clientController.logout);
+router.post('/clients/logout', clientController.logout);
+
+router.post('/register-fcm-token', clientController.registerFCMToken);
+
+router.post('/send-notification', clientController.sendNotification);
 
 /*
- * POST register FCM token
+ * POST video upload
  */
-router.post('/register-fcm-token', requireLogin, clientController.registerFCMToken);
-
-/*
- * POST send notification
- */
-router.post('/send-notification', requireLogin, clientController.sendNotification);
+router.post('/upload-video', requireLogin, upload.single('video'), clientController.uploadVideo);
 
 /*
  * POST start 2FA
  */
 router.post('/start-2fa', requireLogin, clientController.start2FA);
-
-/*
- * POST upload video
- */
-router.post('/upload-video', requireLogin, clientController.uploadVideo);
 
 /*
  * POST verify 2FA
