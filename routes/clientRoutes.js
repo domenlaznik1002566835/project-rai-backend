@@ -31,13 +31,36 @@ router.delete('/:id', requireLogin, clientController.remove);
 /*
  * POST login
  */
-router.post('/login', clientController.login)
+router.post('/login', clientController.login);
 
-router.post('/clients/logout', clientController.logout);
+/*
+ * POST logout
+ */
+router.post('/logout', requireLogin, clientController.logout);
 
-router.post('/register-fcm-token', clientController.registerFCMToken);
+/*
+ * POST register FCM token
+ */
+router.post('/register-fcm-token', requireLogin, clientController.registerFCMToken);
 
-app.post('/send-notification', clientController.sendNotification);
+/*
+ * POST send notification
+ */
+router.post('/send-notification', requireLogin, clientController.sendNotification);
 
+/*
+ * POST start 2FA
+ */
+router.post('/start-2fa', requireLogin, clientController.start2FA);
+
+/*
+ * POST upload video
+ */
+router.post('/upload-video', requireLogin, clientController.uploadVideo);
+
+/*
+ * POST verify 2FA
+ */
+router.post('/verify-2fa', requireLogin, clientController.verify2FA);
 
 module.exports = router;

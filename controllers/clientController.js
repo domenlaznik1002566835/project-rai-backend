@@ -1,14 +1,27 @@
-var ClientModel = require('../models/clientModel.js');
-const { sendPushNotification } = require('../middleware/sendPushNotifications.js');
-var FCMTokenModel = require('../models/FCMtokenModel.js'); 
+const axios = require('axios');
+const Video2FAModel = require('../models/video2FA');
+const ClientModel = require('../models/clientModel');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const { sendPushNotification } = require('../middleware/sendPushNotifications');
+const FCMTokenModel = require('../models/FCMtokenModel');
 
-/**
- * clientController.js
- *
- * @description :: Server-side logic for managing clients.
- */
+// Konfiguracija za nalaganje datotek z uporabo multerja
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 module.exports = {
-
     /**
      * clientController.list()
      */
@@ -187,7 +200,7 @@ module.exports = {
                 console.log('Attempting to send push notification');
                 await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
                 console.log('Push notification sent successfully');
-            } else { //web trenutno
+            } else {
                 console.log('No FCM token provided, skipping push notification');
             }
     
@@ -253,5 +266,79 @@ module.exports = {
             console.error('Error sending notification:', err);
             return res.status(500).json({ message: 'Internal server error' });
         }
-    }
+    },
+
+    /**
+     * clientController.uploadVideo()
+     */
+    uploadVideo: async function (req, res) {
+        upload.single('video')(req, res, async function (err) {
+            if (err) {
+                return res.status(500).json({ message: 'Error uploading video', error: err });
+            }
+            
+            const userId = req.session.userId;
+            if (!userId) {
+                return res.status(401).json({ message: 'Unauthorized' });
+            }
+            
+            const filePath = req.file.path;
+            try {
+                const video2FA = new Video2FAModel({
+                    client: userId,
+                    videoPath: filePath
+                });
+                await video2FA.save();
+                return res.status(200).json({ message: 'Video uploaded successfully' });
+            } catch (err) {
+                return res.status(500).json({ message: 'Error saving video', error: err });
+            }
+        });
+    },
+
+    /**
+     * clientController.start2FA()
+     */
+    start2FA: async function (req, res) {
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        // Pošljite push notifikacijo ali začnite postopek zajema videa v mobilni aplikaciji
+        const tokenRecord = await FCMTokenModel.findOne({ userId });
+        if (tokenRecord && tokenRecord.fcmToken) {
+            await sendPushNotification(tokenRecord.fcmToken, "2FA Verification", "Please verify your login attempt.");
+            return res.status(200).json({ message: '2FA process started' });
+        } else {
+            return res.status(404).json({ message: 'FCM token not found' });
+        }
+    },
+
+    /**
+     * clientController.verify2FA()
+     */
+    verify2FA: async function (req, res) {
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const { videoPath } = req.body;
+        if (!videoPath || !fs.existsSync(videoPath)) {
+            return res.status(400).json({ message: 'Invalid video path' });
+        }
+
+        // Pošljite video na Python API za obdelavo
+        try {
+            const response = await axios.post('http://localhost:5000/process_video', { file_path: videoPath });
+            if (response.data.success) {
+                return res.status(200).json({ message: '2FA verified successfully' });
+            } else {
+                return res.status(400).json({ message: '2FA verification failed' });
+            }
+        } catch (err) {
+            return res.status(500).json({ message: 'Error processing video', error: err });
+        }
+    },
 };
