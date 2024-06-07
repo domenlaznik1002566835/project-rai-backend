@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var bodyParser = require('body-parser');
 var session = require('express-session');
+const fs = require('fs');
 
 
 // Database connection
@@ -17,6 +18,11 @@ db.on('error', console.error.bind(console, 'MongoDB connection error:'));
 db.once('open', function() {
   console.log('MongoDB connection successful!');
 });
+
+const uploadDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadDir)){
+    fs.mkdirSync(uploadDir);
+}
 
 // Routes
 var indexRouter = require('./routes/index');
@@ -36,7 +42,7 @@ var app = express();
 
 // CORS
 var cors = require('cors');
-var allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002'];
+var allowedOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://10.0.2.2:3001'];
 app.use(cors({
   origin: function(origin, callback){
     // allow requests with no origin

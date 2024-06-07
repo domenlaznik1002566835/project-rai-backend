@@ -1,19 +1,19 @@
-var ClientModel = require('../models/clientModel.js');
+const axios = require('axios');
+const Video2FAModel = require('../models/video2FA');
+const ClientModel = require('../models/clientModel');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
+const { sendPushNotification } = require('../middleware/sendPushNotifications');
+const FCMTokenModel = require('../models/FCMtokenModel');
 var StaffModel = require('../models/staffModel.js');
 
-/**
- * clientController.js
- *
- * @description :: Server-side logic for managing clients.
- */
 module.exports = {
-
-    /**
-     * clientController.list()
-     */
     list: async function (req, res) {
         try {
-            const clients = await ClientModel.find().sort({created: -1});
+            const clients = await ClientModel.find().sort({ created: -1 });
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
@@ -23,58 +23,52 @@ module.exports = {
         }
     },
 
-    /**
-     * clientController.show()
-     */
     show: async function (req, res) {
         var id = req.params.id;
 
         try {
-            const staff = await ClientModel.findOne({_id: id});
-            if (!staff) {
+            const client = await ClientModel.findOne({ _id: id });
+            if (!client) {
                 return res.status(404).json({
                     message: 'No such client'
                 });
             }
 
-            return res.json(staff);
+            return res.json(client);
         } catch (err) {
             return res.status(500).json({
-                message: 'Error when getting staff.',
+                message: 'Error when getting client.',
                 error: err
             });
         }
     },
 
-    /**
-     * clientController.create()
-     */
-    register: async function (req, res) {
-        const {firstName, lastName, email, password} = req.body;
+    create: async function (req, res) {
+        const { firstName, lastName, email, password } = req.body;
 
-        let emailExists = await ClientModel.findOne({email: email});
+        let emailExists = await ClientModel.findOne({ email: email });
         if (emailExists) {
-            return res.status(400).json({error: 1, message: "A client with this email already exists"});
+            return res.status(400).json({ error: 1, message: "A client with this email already exists" });
         }
-        let emailStaffExists = await StaffModel.findOne({email: email});
+        let emailStaffExists = await StaffModel.findOne({ email: email });
         if (emailStaffExists) {
-            return res.status(400).json({error: 1, message: "A staff member with this email already exists"});
+            return res.status(400).json({ error: 1, message: "A staff member with this email already exists" });
         }
         const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
         if (!emailRegex.test(email)) {
-            return res.status(400).json({error: 1, message: "Invalid email format"});
+            return res.status(400).json({ error: 1, message: "Invalid email format" });
         }
 
         const client = new ClientModel({
-                firstName: firstName,
-                lastName: lastName,
-                email: email,
-                password: password
-            }
-        );
+            firstName: firstName,
+            lastName: lastName,
+            email: email,
+            password: password
+        });
 
         try {
             await client.save();
+            req.session.userId = client._id;
             return res.json(client);
         } catch (err) {
             return res.status(500).json({
@@ -82,11 +76,8 @@ module.exports = {
                 error: err
             });
         }
-    }
-    ,
-    /**
-     * clientController.update()
-     */
+    },
+
     update: async function (req, res) {
         var id = req.params.id;
         try {
@@ -114,9 +105,6 @@ module.exports = {
         }
     },
 
-    /**
-     * clientController.remove()
-     */
     remove: async function (req, res) {
         var id = req.params.id;
         try {
@@ -148,17 +136,190 @@ module.exports = {
             });
         }
     },
-    login: async function (req, res, next) {
-        const {email, password} = req.body;
+
+    logout: async function (req, res) {
         try {
-            const client = await ClientModel.authenticate(email, password);
-            req.session.userId = client._id;
-            return res.json(client);
+            if (req.session.userId) {
+                req.session.destroy(function (err) {
+                    if (err) {
+                        console.error('Error destroying session:', err);
+                        return res.status(500).json({ message: 'Error logging out' });
+                    }
+
+                    console.log('User logged out successfully');
+                    return res.status(200).json({ message: 'Logged out successfully' });
+                });
+            } else {
+                return res.status(400).json({ message: 'No user session found' });
+            }
         } catch (err) {
-            return res.status(401).json({
-                message: 'Invalid email or password',
-                error: err
-            });
+            console.error('Logout error:', err);
+            return res.status(500).json({ message: 'Internal server error' });
         }
     },
+
+    login: async function (req, res, next) {
+        try {
+            console.log('Login request:', req.body);
+    
+            const user = await ClientModel.authenticate(req.body.email, req.body.password);
+            if (!user) {
+                console.error('Authentication failed: User not found');
+                throw new Error('User not found.');
+            }
+    
+            req.session.userId = user._id;
+    
+            const { fcmToken } = req.body;
+    
+            console.log('FCM Token received:', fcmToken);
+    
+            if (!fcmToken) {
+                console.error('FCM token is required');
+                throw new Error('FCM token is required.');
+            }
+    
+            let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
+            if (tokenRecord) {
+                tokenRecord.fcmToken = fcmToken;
+                console.log('Token record updated:', tokenRecord);
+            } else {
+                tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
+                console.log('New token record created:', tokenRecord);
+            }
+    
+            await tokenRecord.save();
+            console.log('FCM token registered successfully:', tokenRecord);
+    
+            console.log('Attempting to send push notification');
+            await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
+            console.log('Push notification sent successfully');
+    
+            return res.json({ success: true, message: "Login successful", userId: user._id });
+        } catch (err) {
+            console.error('Login error:', err);
+            var error = new Error('Wrong email or password');
+            error.status = 401;
+            return next(error);
+        }
+    },
+    
+
+    registerFCMToken: async function (req, res) {
+        const { userId, fcmToken } = req.body;
+        console.log('Register FCM token request received:', req.body);
+
+        if (!userId || !fcmToken) {
+            console.log('Missing userId or fcmToken');
+            return res.status(400).json({ message: 'Missing userId or fcmToken' });
+        }
+
+        try {
+            const client = await ClientModel.findById(userId);
+            if (!client) {
+                console.log('User not found:', userId);
+                return res.status(404).json({ message: 'User not found' });
+            }
+
+            let tokenRecord = await FCMTokenModel.findOne({ userId });
+            if (tokenRecord) {
+                tokenRecord.fcmToken = fcmToken;
+                console.log('Token record updated:', tokenRecord);
+            } else {
+                tokenRecord = new FCMTokenModel({ userId, fcmToken });
+                console.log('New token record created:', tokenRecord);
+            }
+
+            await tokenRecord.save();
+            console.log('FCM token registered successfully:', tokenRecord);
+
+            return res.status(200).json({ message: 'FCM token registered successfully' });
+        } catch (err) {
+            console.error('Error registering FCM token:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    },
+
+    sendNotification: async function (req, res) {
+        const { userId, title, message } = req.body;
+        console.log('Send notification request received:', req.body);
+
+        try {
+            const tokenRecord = await FCMTokenModel.findOne({ userId });
+            if (!tokenRecord || !tokenRecord.fcmToken) {
+                console.log('No FCM token found for user:', userId);
+                return res.status(404).json({ message: 'No FCM token found' });
+            }
+
+            await sendPushNotification(tokenRecord.fcmToken, title, message);
+            console.log('Notification sent successfully');
+            return res.status(200).json({ message: 'Notification sent successfully' });
+        } catch (err) {
+            console.error('Error sending notification:', err);
+            return res.status(500).json({ message: 'Internal server error' });
+        }
+    },
+
+    uploadVideo: async function (req, res) {
+        upload.single('video')(req, res, async function (err) {
+            if (err) {
+                return res.status(500).json({ message: 'Error uploading video', error: err });
+            }
+
+            const userId = req.session.userId;
+            if (!userId) {
+                return res.status(401).json({ message: 'Unauthorized' });
+            }
+
+            const filePath = req.file.path;
+            try {
+                const video2FA = new Video2FAModel({
+                    client: userId,
+                    videoPath: filePath
+                });
+                await video2FA.save();
+                return res.status(200).json({ message: 'Video uploaded successfully' });
+            } catch (err) {
+                return res.status(500).json({ message: 'Error saving video', error: err });
+            }
+        });
+    },
+
+    start2FA: async function (req, res) {
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const tokenRecord = await FCMTokenModel.findOne({ userId });
+        if (tokenRecord && tokenRecord.fcmToken) {
+            await sendPushNotification(tokenRecord.fcmToken, "2FA Verification", "Please verify your login attempt.");
+            return res.status(200).json({ message: '2FA process started' });
+        } else {
+            return res.status(404).json({ message: 'FCM token not found' });
+        }
+    },
+
+    verify2FA: async function (req, res) {
+        const userId = req.session.userId;
+        if (!userId) {
+            return res.status(401).json({ message: 'Unauthorized' });
+        }
+
+        const { videoPath } = req.body;
+        if (!videoPath || !fs.existsSync(videoPath)) {
+            return res.status(400).json({ message: 'Invalid video path' });
+        }
+
+        try {
+            const response = await axios.post('http://localhost:5000/process_video', { file_path: videoPath });
+            if (response.data.success) {
+                return res.status(200).json({ message: '2FA verified successfully' });
+            } else {
+                return res.status(400).json({ message: '2FA verification failed' });
+            }
+        } catch (err) {
+            return res.status(500).json({ message: 'Error processing video', error: err });
+        }
+    }
 };
