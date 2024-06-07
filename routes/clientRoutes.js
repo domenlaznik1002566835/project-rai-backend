@@ -41,6 +41,7 @@ router.post('/register-fcm-token', clientController.registerFCMToken);
 
 router.post('/send-notification', clientController.sendNotification);
 
+router.post('/login-web', clientController.login_web);
 /*
  * POST video upload
  */

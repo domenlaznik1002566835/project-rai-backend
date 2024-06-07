@@ -203,6 +203,18 @@ module.exports = {
             return next(error);
         }
     },
+
+    login_web: async function (req, res, next) {
+        try {
+            const user = await ClientModel.authenticate(req.body.email, req.body.password);
+            req.session.userId = user._id;
+            return res.json(user);
+        } catch (err) {
+            var error = new Error('Wrong email or password');
+            error.status = 401;
+            return next(error);
+        }
+    },
     
 
     registerFCMToken: async function (req, res) {
