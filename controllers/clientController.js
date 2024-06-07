@@ -8,26 +8,21 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const { sendPushNotification } = require('../middleware/sendPushNotifications');
 const FCMTokenModel = require('../models/FCMtokenModel');
+var StaffModel = require('../models/staffModel.js');
 
-// Konfiguracija za nalaganje datotek z uporabo multerja
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, 'uploads/');
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  }
-});
 
-const upload = multer({ storage: storage });
-
+/**
+ * clientController.js
+ *
+ * @description :: Server-side logic for managing clients.
+ */
 module.exports = {
     /**
      * clientController.list()
      */
     list: async function (req, res) {
         try {
-            const clients = await ClientModel.find();
+            const clients = await ClientModel.find().sort({created: -1});
             return res.json(clients);
         } catch (err) {
             return res.status(500).json({
@@ -42,17 +37,19 @@ module.exports = {
      */
     show: async function (req, res) {
         var id = req.params.id;
+
         try {
-            const client = await ClientModel.findOne({ _id: id });
-            if (!client) {
+            const staff = await ClientModel.findOne({_id: id});
+            if (!staff) {
                 return res.status(404).json({
                     message: 'No such client'
                 });
             }
-            return res.json(client);
+
+            return res.json(staff);
         } catch (err) {
             return res.status(500).json({
-                message: 'Error when getting client.',
+                message: 'Error when getting staff.',
                 error: err
             });
         }
@@ -61,29 +58,41 @@ module.exports = {
     /**
      * clientController.create()
      */
-    create: async function (req, res) {
+    register: async function (req, res) {
+        const {firstName, lastName, email, password} = req.body;
+
+        let emailExists = await ClientModel.findOne({email: email});
+        if (emailExists) {
+            return res.status(400).json({error: 1, message: "A client with this email already exists"});
+        }
+        let emailStaffExists = await StaffModel.findOne({email: email});
+        if (emailStaffExists) {
+            return res.status(400).json({error: 1, message: "A staff member with this email already exists"});
+        }
+        const emailRegex = /^[\w-]+(\.[\w-]+)*@([\w-]+\.)+[a-zA-Z]{2,7}$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({error: 1, message: "Invalid email format"});
+        }
+
+        const client = new ClientModel({
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password
+            }
+        );
+
         try {
-            const client = new ClientModel({
-                firstName: req.body.firstName,
-                lastName: req.body.lastName,
-                email: req.body.email,
-                password: req.body.password
-            });
-
             await client.save();
-
-            // Create session after client is created
-            req.session.userId = client._id;
-
-            return res.status(201).json(client);
+            return res.json(client);
         } catch (err) {
             return res.status(500).json({
                 message: 'Error when creating client',
                 error: err
             });
         }
-    },
-
+    }
+    ,
     /**
      * clientController.update()
      */
@@ -170,7 +179,7 @@ module.exports = {
         }
     },
 
-    login: async function (req, res, next) {
+login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
     
