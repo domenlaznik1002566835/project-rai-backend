@@ -50,23 +50,30 @@ module.exports = {
     /**
      * packageController.create()
      */
-    create: function (req, res) {
+    create: async function (req, res) {
+        const existingPackage = await PackageModel.findOne({ code: req.body.code });
+
+        if (existingPackage) {
+            return res.status(400).json({
+                message: 'A package with this code already exists.'
+            });
+        }
+
         var package = new PackageModel({
             code: req.body.code,
             openTimestamp: req.body.openTimestamp || null,
             closeTimestamp: req.body.closeTimestamp || null
         });
 
-        package.save(function (err, package) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating package',
-                    error: err
-                });
-            }
-
-            return res.status(201).json(package);
-        });
+        try {
+            const savedPackage = await package.save();
+            return res.status(201).json(savedPackage);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating package',
+                error: err
+            });
+        }
     },
 
     /**
