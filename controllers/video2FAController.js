@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+var mongoose = require('mongoose');
 
 // Konfiguracija za nalaganje datotek z uporabo multerja
 const storage = multer.diskStorage({
@@ -119,36 +120,38 @@ exports.authenticate = async (req, res) => {
 };
 
 exports.uploadVideo = async function (req, res) {
-  console.log('Starting video upload process...');
+  console.log("Starting video upload process...");
 
   upload.single('video')(req, res, async function (err) {
-    if (err) {
-      console.error('Error uploading video:', err);
-      return res.status(500).json({ message: 'Error uploading video', error: err });
-    }
+      if (err) {
+          console.log("Error uploading video:", err);
+          return res.status(500).json({ message: 'Error uploading video', error: err });
+      }
 
-    console.log('Video upload completed. File info:', req.file);
+      const filePath = req.file.path;
+      console.log("Video upload completed. File info:", req.file);
+      console.log("Video file path:", filePath);
 
-    if (!req.file) {
-      console.error('No file uploaded.');
-      return res.status(400).json({ message: 'No file uploaded.' });
-    }
+      const userId = req.body.userId;
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+          console.log("No valid userId provided");
+          return res.status(400).json({ message: 'No valid userId provided' });
+      }
 
-    const filePath = req.file.path;
-    console.log('Video file path:', filePath);
+      console.log("Received userId:", userId);
 
-    try {
-      console.log('Saving video info to the database...');
-      const video2FA = new Video2FAModel({
-        // client: userId, // Removed the userId field
-        videoPath: filePath
-      });
-      await video2FA.save();
-      console.log('Video info saved successfully.');
-      return res.status(200).json({ message: 'Video uploaded successfully' });
-    } catch (err) {
-      console.error('Error saving video to the database:', err);
-      return res.status(500).json({ message: 'Error saving video', error: err });
-    }
+      try {
+          console.log("Saving video info to the database...");
+          const video2FA = new Video2FAModel({
+              client: new mongoose.Types.ObjectId(userId),
+              videoPath: filePath
+          });
+          await video2FA.save();
+          console.log("Video info saved successfully");
+          return res.status(200).json({ message: 'Video uploaded successfully' });
+      } catch (err) {
+          console.log("Error saving video to the database:", err);
+          return res.status(500).json({ message: 'Error saving video', error: err });
+      }
   });
 };
