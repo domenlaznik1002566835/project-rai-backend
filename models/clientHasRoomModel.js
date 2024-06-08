@@ -3,10 +3,10 @@ var Schema   = mongoose.Schema;
 
 var clientHasRoomSchema = new Schema({
 	'clientId' : {
-	 	type: Schema.Types.ObjectId,
-	 	ref: 'client'
+		type: Schema.Types.ObjectId,
+		ref: 'client'
 	},
-	'room:' : Number,
+	'room' : Number, // Corrected here
 	'contractCreated' : String,
 	'contractEnds' : String
 });

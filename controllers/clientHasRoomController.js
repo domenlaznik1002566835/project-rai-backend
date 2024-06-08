@@ -56,12 +56,12 @@ module.exports = {
 
         console.log(clientId, roomNumber, contractCreated, contractEnds)
 
-        let roomExists = await RoomModel.findOne({number: roomNumber});
+        let roomExists = await ClienthasroomModel.findOne({number: roomNumber, contractEnds: {$gte: contractCreated}});
         if(!roomExists){
-            return res.status(400).json({error: 1, message: "Room does not exist"});
+            return res.status(400).json({error: 1, message: "Room already has a contract"});
         }
 
-        let roomHasClientExists = await Clienthasroom.findOne({roomId: roomNumber, contractEnds: {$gte: contractCreated}});
+        let roomHasClientExists = await ClienthasroomModel.findOne({number: roomNumber, contractEnds: {$gte: contractCreated}});
         if(roomHasClientExists){
             return res.status(400).json({error: 1, message: "Room already has a client"});
         }
@@ -76,7 +76,7 @@ module.exports = {
         try{
             const clientHasRoom = new ClienthasroomModel({
                     clientId: clientId,
-                    roomId: roomNumber,
+                    room: roomNumber,
                     contractCreated: contractCreated,
                     contractEnds: contractEnds
                 }
