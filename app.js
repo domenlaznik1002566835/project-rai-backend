@@ -37,6 +37,7 @@ var orderRouter = require('./routes/orderRoutes');
 var informationRouter = require('./routes/informationRoutes');
 var video2FARouter = require('./routes/video2FARoutes');
 var clientHasPackageRouter = require('./routes/clientHasPackageRoutes');
+var packageLogsRouter = require('./routes/packageLogsRoutes');
 
 var app = express();
 
@@ -91,6 +92,7 @@ app.use('/orders', orderRouter);
 app.use('/info', informationRouter);
 app.use('/video2fa', video2FARouter);
 app.use('/packageContracts', clientHasPackageRouter);
+app.use('/packageLogs', packageLogsRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
