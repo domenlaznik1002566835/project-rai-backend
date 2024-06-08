@@ -1,3 +1,4 @@
+// controllers/video2FAController.js
 const axios = require('axios');
 const Video2FAModel = require('../models/video2FA');
 const ClientModel = require('../models/clientModel');
@@ -27,10 +28,10 @@ exports.uploadAndVerifyVideo = [
       return res.status(400).send('No file uploaded.');
     }
 
-    const { clientId } = req.body;
+    /*const { clientId } = req.body;
     if (!clientId) {
       return res.status(400).send('No client ID provided.');
-    }
+    }*/
 
     try {
       const client = await ClientModel.findById(clientId);
@@ -82,7 +83,7 @@ exports.getVideo = async (req, res) => {
   }
 };
 
-// Funkcija za preverjanje videoposnetka (optional, odvisno od impl)
+// Funkcija za preverjanje videoposnetka
 exports.verifyVideo = async (req, res) => {
   const { videoPath, clientId } = req.body;
 
@@ -103,7 +104,7 @@ exports.verifyVideo = async (req, res) => {
   }
 };
 
-// Funkcija za avtentikacijo uporabnika, lahko je tudi v clientController.js
+// Funkcija za avtentikacijo uporabnika
 exports.authenticate = async (req, res) => {
   const { email, password } = req.body;
   
@@ -111,11 +112,43 @@ exports.authenticate = async (req, res) => {
     const user = await ClientModel.authenticate(email, password);
     const token = jwt.sign({ _id: user._id }, process.env.SESSION_SECRET, { expiresIn: '1h' });
 
-    // Po prijavi pošljemo potisno obvestilo za 2FA (zakomentirano)
-    // await sendPushNotification(user.registrationId, "2FA Verification", "Please verify your login attempt.");
-
     res.status(200).json({ token });
   } catch (error) {
     res.status(401).send(error.message);
   }
+};
+
+exports.uploadVideo = async function (req, res) {
+  console.log('Starting video upload process...');
+
+  upload.single('video')(req, res, async function (err) {
+    if (err) {
+      console.error('Error uploading video:', err);
+      return res.status(500).json({ message: 'Error uploading video', error: err });
+    }
+
+    console.log('Video upload completed. File info:', req.file);
+
+    if (!req.file) {
+      console.error('No file uploaded.');
+      return res.status(400).json({ message: 'No file uploaded.' });
+    }
+
+    const filePath = req.file.path;
+    console.log('Video file path:', filePath);
+
+    try {
+      console.log('Saving video info to the database...');
+      const video2FA = new Video2FAModel({
+        // client: userId, // Removed the userId field
+        videoPath: filePath
+      });
+      await video2FA.save();
+      console.log('Video info saved successfully.');
+      return res.status(200).json({ message: 'Video uploaded successfully' });
+    } catch (err) {
+      console.error('Error saving video to the database:', err);
+      return res.status(500).json({ message: 'Error saving video', error: err });
+    }
+  });
 };
