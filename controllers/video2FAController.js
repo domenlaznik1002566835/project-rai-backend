@@ -127,9 +127,6 @@ exports.authenticate = async (req, res) => {
   }
 };
 
-// Function for uploading video
-exports.uploadVideo = async (req, res) => {
-  console.log('Starting video upload process...');
 exports.uploadVideo = async function (req, res) {
   console.log("Starting video upload process...");
 
@@ -138,11 +135,6 @@ exports.uploadVideo = async function (req, res) {
           console.log("Error uploading video:", err);
           return res.status(500).json({ message: 'Error uploading video', error: err });
       }
-  upload.single('video')(req, res, async (err) => {
-    if (err) {
-      console.error('Error uploading video:', err);
-      return res.status(500).json({ message: 'Error uploading video', error: err });
-    }
 
       const filePath = req.file.path;
       console.log("Video upload completed. File info:", req.file);
@@ -155,20 +147,6 @@ exports.uploadVideo = async function (req, res) {
       }
 
       console.log("Received userId:", userId);
-    const filePath = req.file.path;
-    const { clientId } = req.body;
-
-    if (!clientId) {
-      console.error('Client ID is required.');
-      return res.status(400).json({ message: 'Client ID is required.' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(clientId)) {
-      console.error('Invalid Client ID format.');
-      return res.status(400).json({ message: 'Invalid Client ID format.' });
-    }
-
-    console.log('Video file path:', filePath);
 
       try {
           console.log("Saving video info to the database...");
@@ -183,28 +161,5 @@ exports.uploadVideo = async function (req, res) {
           console.log("Error saving video to the database:", err);
           return res.status(500).json({ message: 'Error saving video', error: err });
       }
-    try {
-      const client = await ClientModel.findById(clientId);
-      if (!client) {
-        console.error('Client not found.');
-        return res.status(404).json({ message: 'Client not found.' });
-      }
-
-      console.log('Saving video info to the database...');
-      const video2FA = new Video2FAModel({
-        client: clientId,
-        videoPath: filePath
-      });
-      await video2FA.save();
-
-      client.video2FAs.push(video2FA._id);
-      await client.save();
-
-      console.log('Video info saved successfully.');
-      return res.status(200).json({ message: 'Video uploaded successfully' });
-    } catch (err) {
-      console.error('Error saving video to the database:', err);
-      return res.status(500).json({ message: 'Error saving video', error: err });
-    }
   });
 };
