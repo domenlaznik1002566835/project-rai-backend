@@ -1,5 +1,6 @@
 var PackageLogsModel = require('../models/packageLogsModel.js');
 var ClientModel = require('../models/clientModel');
+var StaffModel = require('../models/staffModel');
 
 /**
  * packageLogsController.js
@@ -53,8 +54,35 @@ module.exports = {
      */
     create: async function (req, res) {
         const {code, openedBy, type } = req.body;
-        var client = ClientModel.findOne({_id: openedBy});
+        console.log("Opened by: " + openedBy);
+        var client = await ClientModel.findOne({_id: openedBy});
+        if (!client) {
+            client = await StaffModel.findOne({_id: openedBy});
+            if(!client){
+                return res.status(404).json({
+                    message: 'No such client or staff'
+                });
+            }
+        }
         const clientName = client.firstName + " " + client.lastName;
+        try{
+            var packageLogs = new PackageLogsModel({
+                code : code,
+                openedBy : clientName,
+                type : type,
+                date : new Date()
+            });
+
+            await packageLogs.save();
+
+            return res.status(201).json(packageLogs);
+        }
+        catch (err) {
+            return res.status(500).json({
+                message: 'Error when creating package-logs',
+                error: err
+            });
+        }
     },
 
     /**
