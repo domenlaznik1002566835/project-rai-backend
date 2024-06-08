@@ -7,7 +7,6 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
-var mongoose = require('mongoose');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
