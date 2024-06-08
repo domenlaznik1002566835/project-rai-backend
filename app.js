@@ -30,13 +30,13 @@ var clientRouter = require('./routes/clientRoutes');
 var roomRouter = require('./routes/roomRoutes');
 var staffRouter = require('./routes/staffRoutes');
 var packageRouter = require('./routes/packageRoutes');
-var roomHasPackageRouter = require('./routes/roomHasPackageRoutes');
 var clientHasRoomRouter = require('./routes/clientHasRoomRoutes');
 var ingredientRouter = require('./routes/ingredientRoutes');
 var mealRouter = require('./routes/mealRoutes');
 var orderRouter = require('./routes/orderRoutes');
 var informationRouter = require('./routes/informationRoutes');
 var video2FARouter = require('./routes/video2FARoutes');
+var clientHasPackageRouter = require('./routes/clientHasPackageRoutes');
 
 var app = express();
 
@@ -84,13 +84,13 @@ app.use('/clients', clientRouter);
 app.use('/rooms', roomRouter);
 app.use('/staff', staffRouter);
 app.use('/packages', packageRouter);
-app.use('/roomHasPackages', roomHasPackageRouter);
 app.use('/clientHasRooms', clientHasRoomRouter);
 app.use('/ingredients', ingredientRouter);
 app.use('/meals', mealRouter);
 app.use('/orders', orderRouter);
 app.use('/info', informationRouter);
-app.use('/video2fa', video2FARouter);  
+app.use('/video2fa', video2FARouter);
+app.use('/packageContracts', clientHasPackageRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
