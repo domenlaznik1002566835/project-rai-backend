@@ -6,10 +6,7 @@ var clientHasRoomSchema = new Schema({
 	 	type: Schema.Types.ObjectId,
 	 	ref: 'client'
 	},
-	'roomId' : {
-	 	type: Schema.Types.ObjectId,
-	 	ref: 'room'
-	},
+	'room:' : Number,
 	'contractCreated' : String,
 	'contractEnds' : String
 });

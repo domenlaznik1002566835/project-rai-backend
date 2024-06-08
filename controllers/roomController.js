@@ -56,9 +56,6 @@ module.exports = {
         if(roomExists){
             return res.status(400).json({error: 1, message: "Room already exists"});
         }
-        if(type !== 0 || type !== 1 || type !== 2 || type !== 3) {
-            return res.status(400).json({error: 1, message: "Invalid room type"});
-        }
 
         const room = new RoomModel({
                 number: number,
