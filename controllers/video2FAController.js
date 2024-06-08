@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -20,7 +19,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Middleware to handle video upload and verify clientId
 exports.uploadAndVerifyVideo = [
   upload.single('video'),
   async (req, res) => {
@@ -67,7 +65,6 @@ exports.uploadAndVerifyVideo = [
   }
 ];
 
-// Function to retrieve video by ID
 exports.getVideo = async (req, res) => {
   try {
     const video2FA = await Video2FAModel.findById(req.params.id);
@@ -87,7 +84,6 @@ exports.getVideo = async (req, res) => {
   }
 };
 
-// Function to verify video
 exports.verifyVideo = async (req, res) => {
   const { videoPath, clientId } = req.body;
 
@@ -126,7 +122,6 @@ exports.authenticate = async (req, res) => {
   }
 };
 
-// Function for uploading video
 
 exports.uploadVideo = async function (req, res) {
   console.log("Starting video upload process...");
@@ -137,7 +132,7 @@ exports.uploadVideo = async function (req, res) {
           return res.status(500).json({ message: 'Error uploading video', error: err });
       }
 
-      const filePath = req.file.path.replace(/\\/g, '/');  // Normalize path for compatibility
+      const filePath = req.file.path.replace(/\\/g, '/');  
       console.log("Video upload completed. File info:", req.file);
       console.log("Video file path:", filePath);
 
@@ -158,7 +153,7 @@ exports.uploadVideo = async function (req, res) {
           await video2FA.save();
           console.log("Video info saved successfully");
 
-          // Call Flask API for further processing
+         
           const flaskApiUrl = 'http://localhost:5000/process_video'; // Adjust the Flask API URL if needed
           const response = await axios.post(flaskApiUrl, { file_path: filePath });
 
