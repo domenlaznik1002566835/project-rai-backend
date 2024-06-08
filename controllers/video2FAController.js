@@ -129,6 +129,8 @@ exports.authenticate = async (req, res) => {
 // Function for uploading video
 exports.uploadVideo = async function (req, res) {
   console.log("Starting video upload process...");
+exports.uploadVideo = async function (req, res) {
+  console.log("Starting video upload process...");
 
   upload.single('video')(req, res, async function (err) {
       if (err) {
@@ -163,19 +165,3 @@ exports.uploadVideo = async function (req, res) {
       }
   });
 };
-
-// Verify client existence utility function
-async function verifyClientId(clientId) {
-  if (!mongoose.Types.ObjectId.isValid(clientId)) {
-    throw new Error('Invalid Client ID format.');
-  }
-
-  const client = await ClientModel.findById(clientId);
-  if (!client) {
-    throw new Error('Client not found.');
-  }
-
-  return client;
-}
-
-exports.verifyClientId = verifyClientId;
