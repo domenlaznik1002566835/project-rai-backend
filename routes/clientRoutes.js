@@ -13,7 +13,7 @@ router.get('/', clientController.list);
 /*
  * GET
  */
-router.get('/:id', requireLogin, clientController.show);
+router.get('/:id', /*requireLogin,*/ clientController.show);
 
 /*
  * POST
