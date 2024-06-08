@@ -127,8 +127,7 @@ exports.authenticate = async (req, res) => {
 };
 
 // Function for uploading video
-exports.uploadVideo = async function (req, res) {
-  console.log("Starting video upload process...");
+
 exports.uploadVideo = async function (req, res) {
   console.log("Starting video upload process...");
 
