@@ -161,24 +161,24 @@ module.exports = {
     login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
-    
+
             const user = await ClientModel.authenticate(req.body.email, req.body.password);
             if (!user) {
                 console.error('Authentication failed: User not found');
                 throw new Error('User not found.');
             }
-    
+
             req.session.userId = user._id;
-    
+
             const { fcmToken } = req.body;
-    
+
             console.log('FCM Token received:', fcmToken);
-    
+
             if (!fcmToken) {
                 console.error('FCM token is required');
                 throw new Error('FCM token is required.');
             }
-    
+
             let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
             if (tokenRecord) {
                 tokenRecord.fcmToken = fcmToken;
@@ -187,15 +187,19 @@ module.exports = {
                 tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
                 console.log('New token record created:', tokenRecord);
             }
-    
+
             await tokenRecord.save();
             console.log('FCM token registered successfully:', tokenRecord);
-    
+
             console.log('Attempting to send push notification');
             await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
             console.log('Push notification sent successfully');
-    
-            return res.json({ success: true, message: "Login successful", userId: user._id });
+
+            if(user.level) {
+                return res.json({ success: true, message: "Login successful", userId: user._id, level: user.level });
+            }
+
+            return res.json({ success: true, message: "Login successful", userId: user._id, level: -1 });
         } catch (err) {
             console.error('Login error:', err);
             var error = new Error('Wrong email or password');
