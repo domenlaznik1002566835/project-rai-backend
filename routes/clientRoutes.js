@@ -57,4 +57,7 @@ router.post('/start-2fa', requireLogin, clientController.start2FA);
  */
 router.post('/verify-2fa', requireLogin, clientController.verify2FA);
 
+router.post('/send-test-notification', clientController.sendTestNotification);
+
+
 module.exports = router;
