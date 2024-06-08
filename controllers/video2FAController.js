@@ -8,7 +8,6 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
@@ -20,7 +19,6 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Middleware to handle video upload and verify clientId
 exports.uploadAndVerifyVideo = [
   upload.single('video'),
   async (req, res) => {
@@ -67,7 +65,6 @@ exports.uploadAndVerifyVideo = [
   }
 ];
 
-// Function to retrieve video by ID
 exports.getVideo = async (req, res) => {
   try {
     const video2FA = await Video2FAModel.findById(req.params.id);
@@ -87,7 +84,6 @@ exports.getVideo = async (req, res) => {
   }
 };
 
-// Function to verify video
 exports.verifyVideo = async (req, res) => {
   const { videoPath, clientId } = req.body;
 
@@ -126,7 +122,6 @@ exports.authenticate = async (req, res) => {
   }
 };
 
-// Function for uploading video
 
 exports.uploadVideo = async function (req, res) {
   console.log("Starting video upload process...");
@@ -137,7 +132,7 @@ exports.uploadVideo = async function (req, res) {
           return res.status(500).json({ message: 'Error uploading video', error: err });
       }
 
-      const filePath = req.file.path;
+      const filePath = req.file.path.replace(/\\/g, '/');  
       console.log("Video upload completed. File info:", req.file);
       console.log("Video file path:", filePath);
 
@@ -157,10 +152,23 @@ exports.uploadVideo = async function (req, res) {
           });
           await video2FA.save();
           console.log("Video info saved successfully");
-          return res.status(200).json({ message: 'Video uploaded successfully' });
+
+         
+          const flaskApiUrl = 'http://localhost:5000/process_video'; // Adjust the Flask API URL if needed
+          const response = await axios.post(flaskApiUrl, { file_path: filePath });
+
+          console.log("Response from Flask API:", response.data);
+
+          if (response.status === 200) {
+              console.log("Video processed successfully by Flask API");
+              return res.status(200).json({ message: 'Video uploaded and processed successfully', result: response.data });
+          } else {
+              console.log("Error processing video with Flask API:", response.data);
+              return res.status(500).json({ message: 'Error processing video with Flask API', error: response.data });
+          }
       } catch (err) {
-          console.log("Error saving video to the database:", err);
-          return res.status(500).json({ message: 'Error saving video', error: err });
+          console.log("Error saving video to the database or processing video:", err);
+          return res.status(500).json({ message: 'Error saving video or processing video', error: err });
       }
   });
 };
