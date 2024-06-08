@@ -14,7 +14,7 @@ const webPush = require('web-push');
 
 // Nastavitve Web Push
 webPush.setVapidDetails(
-  'mailto:nik.damis@student.um.si',  
+  'mailto:nejc.petkoski@student.um.si',  
   process.env.VAPID_PUBLIC_KEY,
   process.env.VAPID_PRIVATE_KEY
 );
