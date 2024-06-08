@@ -1,6 +1,7 @@
 const axios = require('axios');
 const Video2FAModel = require('../models/video2FA');
 const ClientModel = require('../models/clientModel');
+const WebPushSubscriptionModel = require('../models/WebPushSubscriptionModel');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -9,8 +10,44 @@ require('dotenv').config();
 const { sendPushNotification } = require('../middleware/sendPushNotifications');
 const FCMTokenModel = require('../models/FCMtokenModel');
 var StaffModel = require('../models/staffModel.js');
+const webPush = require('web-push');
+
+// Nastavitve Web Push
+webPush.setVapidDetails(
+  'mailto:nejc.petkoski@student.um.si',  
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 module.exports = {
+
+    sendTestNotification: async function (req, res) {
+        const { userId, title, message } = req.body;
+        console.log('Send test notification request received:', req.body);
+    
+        try {
+          const tokenRecord = await WebPushSubscriptionModel.findOne({ userId });
+          if (!tokenRecord || !tokenRecord.webPushSubscription) {
+            console.log('No Web Push subscription found for user:', userId);
+            return res.status(404).json({ message: 'No Web Push subscription found' });
+          }
+    
+          const payload = JSON.stringify({ title, message });
+          webPush.sendNotification(tokenRecord.webPushSubscription, payload)
+            .then(response => {
+              console.log('Test notification sent successfully:', response);
+              return res.status(200).json({ message: 'Test notification sent successfully' });
+            })
+            .catch(err => {
+              console.error('Error sending test notification:', err);
+              return res.status(500).json({ message: 'Internal server error' });
+            });
+        } catch (err) {
+          console.error('Error sending test notification:', err);
+          return res.status(500).json({ message: 'Internal server error' });
+        }
+      },
+
     list: async function (req, res) {
         try {
             const clients = await ClientModel.find().sort({ created: -1 });
@@ -162,6 +199,7 @@ module.exports = {
         try {
             console.log('Login request:', req.body);
 
+            // Authenticate user (client)
             const user = await ClientModel.authenticate(req.body.email, req.body.password);
             if (!user) {
                 console.error('Authentication failed: User not found');
@@ -170,35 +208,45 @@ module.exports = {
 
             req.session.userId = user._id;
 
-            const { fcmToken } = req.body;
+            const { subscription } = req.body;
 
-            console.log('FCM Token received:', fcmToken);
+            // Save Web Push Subscription if it exists
+            if (subscription) {
+                console.log('Web Push subscription received:', subscription);
 
-            if (!fcmToken) {
-                console.error('FCM token is required');
-                throw new Error('FCM token is required.');
+                let tokenRecord = await WebPushSubscriptionModel.findOne({ userId: user._id });
+                if (tokenRecord) {
+                    tokenRecord.webPushSubscription = subscription;
+                    tokenRecord.userModel = 'Client';
+                    console.log('Web Push subscription updated:', tokenRecord);
+                } else {
+                    tokenRecord = new WebPushSubscriptionModel({ userId: user._id, webPushSubscription: subscription, userModel: 'Client' });
+                    console.log('New Web Push subscription created:', tokenRecord);
+                }
+                await tokenRecord.save();
+                console.log('Web Push subscription registered successfully:', tokenRecord);
             }
 
-            let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
-            if (tokenRecord) {
-                tokenRecord.fcmToken = fcmToken;
-                console.log('Token record updated:', tokenRecord);
-            } else {
-                tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
-                console.log('New token record created:', tokenRecord);
+            // Notify administrators only
+            const admins = await StaffModel.find({ level: { $gt: 0 } });
+            for (const admin of admins) {
+                const adminTokenRecord = await WebPushSubscriptionModel.findOne({ userId: admin._id, userModel: 'Staff' });
+                if (adminTokenRecord && adminTokenRecord.webPushSubscription) {
+                    const payload = JSON.stringify({ title: "2FA Verification", message: "Please verify your login attempt." });
+                    webPush.sendNotification(adminTokenRecord.webPushSubscription, payload)
+                        .then(response => console.log(`Web Push Notification sent to admin: ${admin.email}`))
+                        .catch(err => console.error('Error sending Web Push Notification:', err));
+                }
             }
 
-            await tokenRecord.save();
-            console.log('FCM token registered successfully:', tokenRecord);
+            console.log('Notifications sent successfully');
 
-            console.log('Attempting to send push notification');
-            await sendPushNotification(fcmToken, "2FA Verification", "Please verify your login attempt.");
-            console.log('Push notification sent successfully');
-
-            if(user.level) {
+            // If user has `level`, return it along with the user ID
+            if (user.level) {
                 return res.json({ success: true, message: "Login successful", userId: user._id, level: user.level });
             }
 
+            // If user does not have `level`, return `level: -1` for regular users (clients)
             return res.json({ success: true, message: "Login successful", userId: user._id, level: -1 });
         } catch (err) {
             console.error('Login error:', err);

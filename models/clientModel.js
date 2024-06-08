@@ -66,7 +66,7 @@ clientSchema.statics.authenticate = async function(email, password) {
     }
 };
 
-var ClientModel = mongoose.model('Client', clientSchema);
+var ClientModel = mongoose.model('client', clientSchema);
 
 module.exports = ClientModel;
 module.exports.authenticate = authenticate;
