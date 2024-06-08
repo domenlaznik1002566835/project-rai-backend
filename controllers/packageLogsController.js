@@ -1,6 +1,7 @@
 var PackageLogsModel = require('../models/packageLogsModel.js');
 var ClientModel = require('../models/clientModel');
 var StaffModel = require('../models/staffModel');
+var ClientHasPackageModel = require('../models/clientHasPackageModel.js');
 
 /**
  * packageLogsController.js
@@ -28,25 +29,43 @@ module.exports = {
     /**
      * package-logsController.show()
      */
-    show: function (req, res) {
+    show: async function (req, res) {
         var id = req.params.id;
+        var currentDate = new Date();
 
-        PackageLogsModel.findOne({_id: id}, function (err, packageLogs) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when getting package-logs.',
-                    error: err
-                });
-            }
-
-            if (!packageLogs) {
-                return res.status(404).json({
-                    message: 'No such package-logs'
-                });
-            }
-
-            return res.json(packageLogs);
+        var clientPackages = await ClientHasPackageModel.find({
+            'client': id,
+            'start': { $lte: currentDate },
+            'end': { $gte: currentDate }
         });
+
+        if (!clientPackages || clientPackages.length === 0) {
+            return res.status(404).json({
+                message: 'No such client or package'
+            });
+        }
+
+        var allPackageLogs = [];
+        for (let clientPackage of clientPackages) {
+            var packageLogs = await PackageLogsModel.find({
+                'code': clientPackage.package,
+                'date': { $gte: clientPackage.start, $lte: clientPackage.end }
+            });
+
+            if (packageLogs && packageLogs.length > 0) {
+                allPackageLogs.push(...packageLogs);
+            }
+        }
+
+        if (allPackageLogs.length === 0) {
+            return res.status(404).json({
+                message: 'No package logs found'
+            });
+        }
+
+        console.log(allPackageLogs);
+
+        return res.json(allPackageLogs);
     },
 
     /**
