@@ -20,24 +20,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Function for uploading video and verifying identity
+// Middleware to handle video upload and verify clientId
 exports.uploadAndVerifyVideo = [
   upload.single('video'),
   async (req, res) => {
-    if (!req.file) {
-      return res.status(400).send('No file uploaded.');
-    }
-
-    const { clientId } = req.body;
-    if (!clientId) {
-      return res.status(400).send('No client ID provided.');
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(clientId)) {
-      return res.status(400).send('Invalid Client ID format.');
-    }
-
     try {
+      if (!req.file) {
+        return res.status(400).send('No file uploaded.');
+      }
+
+      const { clientId } = req.body;
+      if (!clientId) {
+        return res.status(400).send('No client ID provided.');
+      }
+
+      if (!mongoose.Types.ObjectId.isValid(clientId)) {
+        return res.status(400).send('Invalid Client ID format.');
+      }
+
       const client = await ClientModel.findById(clientId);
       if (!client) {
         return res.status(404).send('Client not found.');
@@ -61,13 +61,13 @@ exports.uploadAndVerifyVideo = [
 
       res.status(200).send(response.data.result);
     } catch (error) {
-      console.error(error);
+      console.error('Error processing video:', error);
       res.status(500).send('Error processing video.');
     }
   }
 ];
 
-// Function for retrieving video
+// Function to retrieve video by ID
 exports.getVideo = async (req, res) => {
   try {
     const video2FA = await Video2FAModel.findById(req.params.id);
@@ -82,12 +82,12 @@ exports.getVideo = async (req, res) => {
 
     res.sendFile(path.resolve(videoPath));
   } catch (error) {
-    console.error(error);
+    console.error('Error retrieving video:', error);
     res.status(500).send('Error retrieving video.');
   }
 };
 
-// Function for verifying video
+// Function to verify video
 exports.verifyVideo = async (req, res) => {
   const { videoPath, clientId } = req.body;
 
@@ -107,12 +107,12 @@ exports.verifyVideo = async (req, res) => {
 
     res.status(200).send(response.data.result);
   } catch (error) {
-    console.error(error);
+    console.error('Error verifying video:', error);
     res.status(500).send('Error verifying video.');
   }
 };
 
-// Function for authenticating user
+// Function to authenticate user
 exports.authenticate = async (req, res) => {
   const { email, password } = req.body;
 
@@ -127,59 +127,55 @@ exports.authenticate = async (req, res) => {
 };
 
 // Function for uploading video
-exports.uploadVideo = async (req, res) => {
-  console.log('Starting video upload process...');
+exports.uploadVideo = async function (req, res) {
+  console.log("Starting video upload process...");
 
-  upload.single('video')(req, res, async (err) => {
-    if (err) {
-      console.error('Error uploading video:', err);
-      return res.status(500).json({ message: 'Error uploading video', error: err });
-    }
-
-    console.log('Video upload completed. File info:', req.file);
-
-    if (!req.file) {
-      console.error('No file uploaded.');
-      return res.status(400).json({ message: 'No file uploaded.' });
-    }
-
-    const filePath = req.file.path;
-    const { clientId } = req.body;
-
-    if (!clientId) {
-      console.error('Client ID is required.');
-      return res.status(400).json({ message: 'Client ID is required.' });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(clientId)) {
-      console.error('Invalid Client ID format.');
-      return res.status(400).json({ message: 'Invalid Client ID format.' });
-    }
-
-    console.log('Video file path:', filePath);
-
-    try {
-      const client = await ClientModel.findById(clientId);
-      if (!client) {
-        console.error('Client not found.');
-        return res.status(404).json({ message: 'Client not found.' });
+  upload.single('video')(req, res, async function (err) {
+      if (err) {
+          console.log("Error uploading video:", err);
+          return res.status(500).json({ message: 'Error uploading video', error: err });
       }
 
-      console.log('Saving video info to the database...');
-      const video2FA = new Video2FAModel({
-        client: clientId,
-        videoPath: filePath
-      });
-      await video2FA.save();
+      const filePath = req.file.path;
+      console.log("Video upload completed. File info:", req.file);
+      console.log("Video file path:", filePath);
 
-      client.video2FAs.push(video2FA._id);
-      await client.save();
+      const userId = req.body.userId;
+      if (!mongoose.Types.ObjectId.isValid(userId)) {
+          console.log("No valid userId provided");
+          return res.status(400).json({ message: 'No valid userId provided' });
+      }
 
-      console.log('Video info saved successfully.');
-      return res.status(200).json({ message: 'Video uploaded successfully' });
-    } catch (err) {
-      console.error('Error saving video to the database:', err);
-      return res.status(500).json({ message: 'Error saving video', error: err });
-    }
+      console.log("Received userId:", userId);
+
+      try {
+          console.log("Saving video info to the database...");
+          const video2FA = new Video2FAModel({
+              client: new mongoose.Types.ObjectId(userId),
+              videoPath: filePath
+          });
+          await video2FA.save();
+          console.log("Video info saved successfully");
+          return res.status(200).json({ message: 'Video uploaded successfully' });
+      } catch (err) {
+          console.log("Error saving video to the database:", err);
+          return res.status(500).json({ message: 'Error saving video', error: err });
+      }
   });
 };
+
+// Verify client existence utility function
+async function verifyClientId(clientId) {
+  if (!mongoose.Types.ObjectId.isValid(clientId)) {
+    throw new Error('Invalid Client ID format.');
+  }
+
+  const client = await ClientModel.findById(clientId);
+  if (!client) {
+    throw new Error('Client not found.');
+  }
+
+  return client;
+}
+
+exports.verifyClientId = verifyClientId;
