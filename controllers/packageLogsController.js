@@ -63,8 +63,6 @@ module.exports = {
             });
         }
 
-        console.log(allPackageLogs);
-
         return res.json(allPackageLogs);
     },
 

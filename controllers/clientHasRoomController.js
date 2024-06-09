@@ -1,4 +1,5 @@
 var ClienthasroomModel = require('../models/clientHasRoomModel.js');
+var RoomModel = require('../models/roomModel.js');
 
 /**
  * clientHasRoomController.js
@@ -50,25 +51,46 @@ module.exports = {
     /**
      * clientHasRoomController.create()
      */
-    create: function (req, res) {
-        var clientHasRoom = new ClienthasroomModel({
-			clientId : req.body.clientId,
-			roomId : req.body.roomId,
-			contractCreated : req.body.contractCreated,
-			contractEnds : req.body.contractEnds
-        });
+    create: async function (req, res) {
+        const {clientId, roomNumber, contractCreated, contractEnds} = req.body;
 
-        clientHasRoom.save(function (err, clientHasRoom) {
-            if (err) {
-                return res.status(500).json({
-                    message: 'Error when creating clientHasRoom',
-                    error: err
-                });
-            }
+        console.log(clientId, roomNumber, contractCreated, contractEnds)
 
-            return res.status(201).json(clientHasRoom);
-        });
-    },
+        let roomExists = await ClienthasroomModel.findOne({number: roomNumber, contractEnds: {$gte: contractCreated}});
+        if(!roomExists){
+            return res.status(400).json({error: 1, message: "Room already has a contract"});
+        }
+
+        let roomHasClientExists = await ClienthasroomModel.findOne({number: roomNumber, contractEnds: {$gte: contractCreated}});
+        if(roomHasClientExists){
+            return res.status(400).json({error: 1, message: "Room already has a client"});
+        }
+
+        let date = new Date();
+        let today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        let clientHasRoomExists = await ClienthasroomModel.findOne({clientId: clientId, contractEnds: {$gte: today}});
+        if(clientHasRoomExists){
+            return res.status(400).json({error: 1, message: "Client already has a room"});
+        }
+
+        try{
+            const clientHasRoom = new ClienthasroomModel({
+                    clientId: clientId,
+                    room: roomNumber,
+                    contractCreated: contractCreated,
+                    contractEnds: contractEnds
+                }
+            );
+            await clientHasRoom.save();
+            return res.json(clientHasRoom);
+        } catch(err) {
+            return res.status(500).json({
+                message: 'Error when creating clientHasRoom',
+                error: err
+            });
+        }
+    }
+    ,
 
     /**
      * clientHasRoomController.update()

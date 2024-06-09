@@ -80,6 +80,26 @@ module.exports = {
         }
     },
 
+    getByEmail: async function (req, res) {
+        var email = req.params.email;
+
+        try {
+            const client = await ClientModel.findOne({ email: email});
+            if (!client) {
+                return res.status(404).json({
+                    message: 'No such client'
+                });
+            }
+            return res.json(client);
+        } catch (err) {
+            return res.status(500).json({
+                message: 'Error when getting client.',
+                error: err
+            });
+        }
+    }
+    ,
+
     create: async function (req, res) {
         const { firstName, lastName, email, password } = req.body;
 
@@ -198,6 +218,8 @@ module.exports = {
     login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
+            var webiste = req.body.website;
+            console.log('Website:', webiste);
 
             // Authenticate user (client)
             const user = await ClientModel.authenticate(req.body.email, req.body.password);

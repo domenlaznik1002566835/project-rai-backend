@@ -2,7 +2,7 @@ var mongoose = require('mongoose');
 var Schema   = mongoose.Schema;
 
 var roomSchema = new Schema({
-	'number' : Number,
+	'number' : { type: Number, unique: true },
 	'size' : Number,
 	'type' : Number,
 	'occupied' : Boolean,
