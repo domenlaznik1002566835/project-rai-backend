@@ -1,4 +1,4 @@
-import chai from 'chai';
+import * as chai from 'chai';
 import getByEmail from '../controllers/clientController.js';
 
 const expect = chai.expect;
