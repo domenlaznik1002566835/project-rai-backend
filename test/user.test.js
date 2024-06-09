@@ -1,6 +1,6 @@
-import chai from 'chai';
+const chai = require('chai');
 const expect = chai.expect;
-import ClientController from '../controllers/clientController';
+const ClientController = require('../controllers/clientController');
 
 describe('ClientController', function() {
     it('getByEmail should return a user with the correct firstName', async function() {
