@@ -7,6 +7,8 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 require('dotenv').config();
+const FormData = require('form-data');
+
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -51,7 +53,6 @@ exports.uploadAndVerifyVideo = [
       client.video2FAs.push(video2FA._id);
       await client.save();
 
-      // Send request to Flask app for video verification
       const response = await axios.post('http://localhost:5000/verify_video', {
         video_filename: path.basename(req.file.path),
         client_id: clientId
@@ -153,9 +154,14 @@ exports.uploadVideo = async function (req, res) {
           await video2FA.save();
           console.log("Video info saved successfully");
 
-         
-          const flaskApiUrl = 'http://localhost:5000/process_video'; // Adjust the Flask API URL if needed
-          const response = await axios.post(flaskApiUrl, { file_path: filePath });
+          // Ustvarimo form data za pošiljanje datoteke
+          const form = new FormData();
+          form.append('file', fs.createReadStream(filePath));
+
+          const flaskApiUrl = 'http://localhost:5000/process_video'; 
+          const response = await axios.post(flaskApiUrl, form, {
+              headers: form.getHeaders() 
+          });
 
           console.log("Response from Flask API:", response.data);
 

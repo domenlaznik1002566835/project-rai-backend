@@ -17,6 +17,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "firebase-admin": "^12.1.1",
+    "form-data": "^4.0.0",
     "http-errors": "~1.6.3",
     "jade": "^0.29.0",
     "jsonwebtoken": "^9.0.2",
