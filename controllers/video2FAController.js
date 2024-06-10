@@ -6,9 +6,8 @@ const path = require('path');
 const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
-require('dotenv').config();
 const FormData = require('form-data');
-
+require('dotenv').config();
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -20,108 +19,6 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage: storage });
-
-exports.uploadAndVerifyVideo = [
-  upload.single('video'),
-  async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).send('No file uploaded.');
-      }
-
-      const { clientId } = req.body;
-      if (!clientId) {
-        return res.status(400).send('No client ID provided.');
-      }
-
-      if (!mongoose.Types.ObjectId.isValid(clientId)) {
-        return res.status(400).send('Invalid Client ID format.');
-      }
-
-      const client = await ClientModel.findById(clientId);
-      if (!client) {
-        return res.status(404).send('Client not found.');
-      }
-
-      const video2FA = new Video2FAModel({
-        client: client._id,
-        videoPath: req.file.path
-      });
-
-      await video2FA.save();
-
-      client.video2FAs.push(video2FA._id);
-      await client.save();
-
-      const response = await axios.post('http://localhost:5000/verify_video', {
-        video_filename: path.basename(req.file.path),
-        client_id: clientId
-      });
-
-      res.status(200).send(response.data.result);
-    } catch (error) {
-      console.error('Error processing video:', error);
-      res.status(500).send('Error processing video.');
-    }
-  }
-];
-
-exports.getVideo = async (req, res) => {
-  try {
-    const video2FA = await Video2FAModel.findById(req.params.id);
-    if (!video2FA) {
-      return res.status(404).send('Video not found.');
-    }
-
-    const videoPath = video2FA.videoPath;
-    if (!fs.existsSync(videoPath)) {
-      return res.status(404).send('Video file not found.');
-    }
-
-    res.sendFile(path.resolve(videoPath));
-  } catch (error) {
-    console.error('Error retrieving video:', error);
-    res.status(500).send('Error retrieving video.');
-  }
-};
-
-exports.verifyVideo = async (req, res) => {
-  const { videoPath, clientId } = req.body;
-
-  if (!videoPath || !clientId) {
-    return res.status(400).send('Missing required fields.');
-  }
-
-  if (!mongoose.Types.ObjectId.isValid(clientId)) {
-    return res.status(400).send('Invalid Client ID format.');
-  }
-
-  try {
-    const response = await axios.post('http://localhost:5000/verify_video', {
-      video_filename: path.basename(videoPath),
-      client_id: clientId
-    });
-
-    res.status(200).send(response.data.result);
-  } catch (error) {
-    console.error('Error verifying video:', error);
-    res.status(500).send('Error verifying video.');
-  }
-};
-
-// Function to authenticate user
-exports.authenticate = async (req, res) => {
-  const { email, password } = req.body;
-
-  try {
-    const user = await ClientModel.authenticate(email, password);
-    const token = jwt.sign({ _id: user._id }, process.env.SESSION_SECRET, { expiresIn: '1h' });
-
-    res.status(200).json({ token });
-  } catch (error) {
-    res.status(401).send(error.message);
-  }
-};
 
 
 exports.uploadVideo = async function (req, res) {
@@ -154,7 +51,7 @@ exports.uploadVideo = async function (req, res) {
           await video2FA.save();
           console.log("Video info saved successfully");
 
-          // Ustvarimo form data za pošiljanje datoteke
+          // Create form data for sending the file
           const form = new FormData();
           form.append('file', fs.createReadStream(filePath));
 
@@ -165,16 +62,25 @@ exports.uploadVideo = async function (req, res) {
 
           console.log("Response from Flask API:", response.data);
 
-          if (response.status === 200) {
+          if (response.status === 200 && response.data.success) {
               console.log("Video processed successfully by Flask API");
-              return res.status(200).json({ message: 'Video uploaded and processed successfully', result: response.data });
+              return res.status(200).json({ 
+                  message: 'Video uploaded and processed successfully', 
+                  result: response.data 
+              });
           } else {
               console.log("Error processing video with Flask API:", response.data);
-              return res.status(500).json({ message: 'Error processing video with Flask API', error: response.data });
+              return res.status(400).json({ 
+                  message: 'Error processing video with Flask API', 
+                  error: response.data 
+              });
           }
       } catch (err) {
           console.log("Error saving video to the database or processing video:", err);
-          return res.status(500).json({ message: 'Error saving video or processing video', error: err });
+          return res.status(500).json({ 
+              message: 'Error saving video or processing video', 
+              error: err 
+          });
       }
   });
 };

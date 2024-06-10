@@ -218,56 +218,50 @@ module.exports = {
     login: async function (req, res, next) {
         try {
             console.log('Login request:', req.body);
-            var webiste = req.body.website;
-            console.log('Website:', webiste);
-
+            const { email, password, fcmToken } = req.body;
+    
             // Authenticate user (client)
-            const user = await ClientModel.authenticate(req.body.email, req.body.password);
+            const user = await ClientModel.authenticate(email, password);
             if (!user) {
                 console.error('Authentication failed: User not found');
                 throw new Error('User not found.');
             }
-
+    
             req.session.userId = user._id;
-
-            const { subscription } = req.body;
-
-            // Save Web Push Subscription if it exists
-            if (subscription) {
-                console.log('Web Push subscription received:', subscription);
-
-                let tokenRecord = await WebPushSubscriptionModel.findOne({ userId: user._id });
+    
+            // Save FCM token if it exists
+            if (fcmToken) {
+                console.log('FCM token received:', fcmToken);
+    
+                let tokenRecord = await FCMTokenModel.findOne({ userId: user._id });
                 if (tokenRecord) {
-                    tokenRecord.webPushSubscription = subscription;
-                    tokenRecord.userModel = 'Client';
-                    console.log('Web Push subscription updated:', tokenRecord);
+                    tokenRecord.fcmToken = fcmToken;
+                    console.log('FCM token updated:', tokenRecord);
                 } else {
-                    tokenRecord = new WebPushSubscriptionModel({ userId: user._id, webPushSubscription: subscription, userModel: 'Client' });
-                    console.log('New Web Push subscription created:', tokenRecord);
+                    tokenRecord = new FCMTokenModel({ userId: user._id, fcmToken });
+                    console.log('New FCM token record created:', tokenRecord);
                 }
                 await tokenRecord.save();
-                console.log('Web Push subscription registered successfully:', tokenRecord);
+                console.log('FCM token registered successfully:', tokenRecord);
             }
-
+    
             // Notify administrators only
             const admins = await StaffModel.find({ level: { $gt: 0 } });
             for (const admin of admins) {
-                const adminTokenRecord = await WebPushSubscriptionModel.findOne({ userId: admin._id, userModel: 'Staff' });
-                if (adminTokenRecord && adminTokenRecord.webPushSubscription) {
-                    const payload = JSON.stringify({ title: "2FA Verification", message: "Please verify your login attempt." });
-                    webPush.sendNotification(adminTokenRecord.webPushSubscription, payload)
-                        .then(response => console.log(`Web Push Notification sent to admin: ${admin.email}`))
-                        .catch(err => console.error('Error sending Web Push Notification:', err));
+                const adminTokenRecord = await FCMTokenModel.findOne({ userId: admin._id });
+                if (adminTokenRecord && adminTokenRecord.fcmToken) {
+                    await sendPushNotification(adminTokenRecord.fcmToken, "2FA Verification", "Please verify your login attempt.");
+                    console.log(`Push notification sent to admin: ${admin.email}`);
                 }
             }
-
+    
             console.log('Notifications sent successfully');
-
+    
             // If user has `level`, return it along with the user ID
             if (user.level) {
                 return res.json({ success: true, message: "Login successful", userId: user._id, level: user.level });
             }
-
+    
             // If user does not have `level`, return `level: -1` for regular users (clients)
             return res.json({ success: true, message: "Login successful", userId: user._id, level: -1 });
         } catch (err) {
@@ -277,6 +271,7 @@ module.exports = {
             return next(error);
         }
     },
+    
 
     login_web: async function (req, res, next) {
         try {
