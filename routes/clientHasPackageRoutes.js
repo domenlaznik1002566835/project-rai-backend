@@ -11,6 +11,7 @@ router.get('/', clientHasPackageController.list);
  * GET
  */
 router.get('/:id', clientHasPackageController.show);
+router.get('/all/:clientId', clientHasPackageController.getAllPackagesForClient);
 
 /*
  * POST

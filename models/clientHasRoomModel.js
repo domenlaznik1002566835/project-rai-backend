@@ -7,8 +7,8 @@ var clientHasRoomSchema = new Schema({
 		ref: 'client'
 	},
 	'room' : Number, // Corrected here
-	'contractCreated' : String,
-	'contractEnds' : String
+	'contractCreated' : Date,
+	'contractEnds' : Date
 });
 
 module.exports = mongoose.model('clientHasRoom', clientHasRoomSchema);

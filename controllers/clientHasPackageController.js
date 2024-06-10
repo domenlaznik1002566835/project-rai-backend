@@ -94,6 +94,26 @@ module.exports = {
         }
     },
 
+    getAllPackagesForClient: async function (req, res) {
+        var id = req.params.clientId;
+        console.log("id: " + id);
+        try {
+            const clientHasPackages = await ClienthaspackageModel.find({client: id});
+            if(!clientHasPackages || clientHasPackages.length === 0) {
+                return res.status(404).json({
+                    message: 'No packages found for this client'
+                });
+            }
+            return res.json(clientHasPackages);
+        } catch (err) {
+            console.error(err);
+            return res.status(500).json({
+                message: 'Error when retrieving packages for client',
+                error: err
+            });
+        }
+    }
+    ,
     access: async function (req, res) {
         const {client, code} = req.body;
 

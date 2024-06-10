@@ -47,7 +47,28 @@ module.exports = {
             return res.json(clientHasRoom);
         });
     },
+    getRoomByClient: async function (req, res) {
+        var clientId = req.params.clientId;
 
+        let clientHasRoom = await ClienthasroomModel.findOne({clientId: clientId, contractEnds: {$gte: new Date()}});
+        if (!clientHasRoom) {
+            return res.status(404).json({
+                message: 'No such clientHasRoom'
+            });
+        }
+        let room = await RoomModel.findOne({number: clientHasRoom.room});
+        if(!room){
+            return res.status(404).json({
+                message: 'No such room'
+            });
+        }
+        let data = {
+            room: room,
+            clientHasRoom: clientHasRoom
+        }
+        return res.json(data);
+    }
+    ,
     /**
      * clientHasRoomController.create()
      */
@@ -57,7 +78,7 @@ module.exports = {
         console.log(clientId, roomNumber, contractCreated, contractEnds)
 
         let roomExists = await ClienthasroomModel.findOne({number: roomNumber, contractEnds: {$gte: contractCreated}});
-        if(!roomExists){
+        if(roomExists){
             return res.status(400).json({error: 1, message: "Room already has a contract"});
         }
 

@@ -7,6 +7,7 @@ var clientHasRoomController = require('../controllers/clientHasRoomController.js
  * GET
  */
 router.get('/', clientHasRoomController.list);
+router.get('/:clientId', clientHasRoomController.getRoomByClient);
 
 /*
  * GET
