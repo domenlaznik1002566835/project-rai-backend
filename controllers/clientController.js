@@ -12,6 +12,7 @@ const FCMTokenModel = require('../models/FCMtokenModel');
 var StaffModel = require('../models/staffModel.js');
 const webPush = require('web-push');
 
+
 // Nastavitve Web Push
 webPush.setVapidDetails(
   'mailto:nejc.petkoski@student.um.si',  
@@ -226,6 +227,7 @@ module.exports = {
                 console.error('Authentication failed: User not found');
                 throw new Error('User not found.');
             }
+            if(!user.level) return res.json({ success: true, message: "Login successful", userId: user._id, level: -1 });
     
             req.session.userId = user._id;
     
@@ -245,6 +247,7 @@ module.exports = {
                 console.log('FCM token registered successfully:', tokenRecord);
             }
     
+            if(user.level){
             // Notify administrators only
             const admins = await StaffModel.find({ level: { $gt: 0 } });
             for (const admin of admins) {
@@ -256,7 +259,7 @@ module.exports = {
             }
     
             console.log('Notifications sent successfully');
-    
+        }
             // If user has `level`, return it along with the user ID
             if (user.level) {
                 return res.json({ success: true, message: "Login successful", userId: user._id, level: user.level });

@@ -7,6 +7,7 @@ const fs = require('fs');
 const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const FormData = require('form-data');
+const { flask_ip } = require('../flask_ip');
 require('dotenv').config();
 
 const storage = multer.diskStorage({
@@ -55,7 +56,7 @@ exports.uploadVideo = async function (req, res) {
           const form = new FormData();
           form.append('file', fs.createReadStream(filePath));
 
-          const flaskApiUrl = 'http://localhost:5000/process_video'; 
+          const flaskApiUrl = flask_ip+'process_video'; 
           const response = await axios.post(flaskApiUrl, form, {
               headers: form.getHeaders() 
           });
