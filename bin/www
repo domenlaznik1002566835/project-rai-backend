@@ -7,6 +7,8 @@
 var app = require('../app');
 var debug = require('debug')('backend:server');
 var http = require('http');
+const os = require('os');
+
 
 /**
  * Get port from environment and store in Express.
@@ -86,5 +88,14 @@ function onListening() {
   var bind = typeof addr === 'string'
     ? 'pipe ' + addr
     : 'port ' + addr.port;
+
+  // Get local IP address
+  const networkInterfaces = os.networkInterfaces();
+  const localIP = Object.values(networkInterfaces)
+    .flat()
+    .filter(details => details.family === 'IPv4' && !details.internal)
+    .map(details => details.address)[0];
+
   debug('Listening on ' + bind);
+  console.log(`Server is running at http://${localIP}:${addr.port}`);
 }
