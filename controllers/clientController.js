@@ -267,7 +267,8 @@ module.exports = {
     
             // If user does not have `level`, return `level: -1` for regular users (clients)
             return res.json({ success: true, message: "Login successful", userId: user._id, level: -1 });
-        } catch (err) {
+        }
+       catch (err) {
             console.error('Login error:', err);
             var error = new Error('Wrong email or password');
             error.status = 401;
